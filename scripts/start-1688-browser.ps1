@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'Stop'
 
-$profile = Join-Path (Get-Location) '.1688-browser-profile'
+$profile = Join-Path $env:LOCALAPPDATA 'DelightFilm\1688-browser-profile'
 $urls = @(
   "$env:ProgramFiles\Google\Chrome\Application\chrome.exe",
   "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe",
@@ -23,10 +23,12 @@ Write-Host '[1688 Browser] Dedicated collector browser is ready.' -ForegroundCol
 Write-Host '[1688 Browser] Paste a working 1688 product URL in this window and log in if 1688 asks.' -ForegroundColor Yellow
 Write-Host '[1688 Browser] Keep this window open while collecting from Seller OS.' -ForegroundColor Yellow
 
-Start-Process -FilePath $browser -ArgumentList @(
+$arguments = @(
   '--remote-debugging-port=9222',
-  "--user-data-dir=$profile",
+  ('--user-data-dir="{0}"' -f $profile),
   '--no-first-run',
   '--no-default-browser-check',
   'about:blank'
 )
+
+Start-Process -FilePath $browser -ArgumentList $arguments
