@@ -71,13 +71,13 @@ export async function collect1688Product(input) {
   const local = !configuredEndpoint;
   return {
     ok: true,
-    mode: local ? "LOCAL_HTML_COLLECTOR" : "REMOTE_COLLECTOR",
+    mode: local ? "LOCAL_BROWSER_COLLECTOR" : "REMOTE_COLLECTOR",
     collectedAt: new Date().toISOString(),
     product,
     raw: data,
     missing,
     message: missing.length === 0
-      ? `1688 ${local ? "로컬 HTML" : "외부 API"} Collector에서 주요 필드를 모두 수집했습니다.`
-      : `1688 ${local ? "로컬 HTML" : "외부 API"} Collector가 ${6 - missing.length}/6개 핵심 필드를 수집했습니다. 누락: ${missing.join(", ")}`,
+      ? `1688 ${local ? "로그인 브라우저" : "외부 API"} Collector에서 주요 필드를 모두 수집했습니다.`
+      : `1688 ${local ? "로그인 브라우저" : "외부 API"} Collector가 ${6 - missing.length}/6개 핵심 필드를 수집했습니다. 누락: ${missing.join(", ")}`,
   };
 }
