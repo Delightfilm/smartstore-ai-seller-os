@@ -28,29 +28,21 @@ export function parse1688OfferUrl(input) {
   };
 }
 
+function buildMissing(product) {
+  const missing = [];
+  if (!product.title) missing.push("title");
+  if (product.priceMinCny == null) missing.push("price");
+  if (!product.images?.length) missing.push("images");
+  if (product.minOrderQty == null) missing.push("moq");
+  if (!product.variants?.length) missing.push("variants");
+  if (!product.supplier) missing.push("supplier");
+  return missing;
+}
+
 export async function collect1688Product(input) {
   const parsed = parse1688OfferUrl(input);
-  const endpoint = import.meta.env.VITE_1688_COLLECTOR_URL;
-
-  if (!endpoint) {
-    return {
-      ok: true,
-      mode: "URL_ONLY",
-      collectedAt: new Date().toISOString(),
-      product: {
-        ...parsed,
-        title: null,
-        priceMinCny: null,
-        priceMaxCny: null,
-        images: [],
-        minOrderQty: null,
-        variants: [],
-        supplier: null,
-      },
-      missing: ["title", "price", "images", "moq", "variants", "supplier"],
-      message: "1688 URL과 offerId 추출에 성공했습니다. 실제 상품 상세 수집은 VITE_1688_COLLECTOR_URL 연결 후 활성화됩니다.",
-    };
-  }
+  const configuredEndpoint = import.meta.env.VITE_1688_COLLECTOR_URL;
+  const endpoint = configuredEndpoint || "/api/collect-1688";
 
   const response = await fetch(endpoint, {
     method: "POST",
@@ -58,27 +50,34 @@ export async function collect1688Product(input) {
     body: JSON.stringify({ url: parsed.canonicalUrl, offerId: parsed.offerId }),
   });
 
+  const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(`1688 수집 API 오류 (HTTP ${response.status})`);
+    const message = data?.message || `1688 수집 오류 (HTTP ${response.status})`;
+    throw new Error(message);
   }
 
-  const data = await response.json();
+  const product = {
+    ...parsed,
+    title: data.title ?? data.subject ?? null,
+    priceMinCny: data.priceMinCny ?? data.price?.min ?? null,
+    priceMaxCny: data.priceMaxCny ?? data.price?.max ?? null,
+    images: Array.isArray(data.images) ? data.images : [],
+    minOrderQty: data.minOrderQty ?? data.moq ?? null,
+    variants: Array.isArray(data.variants) ? data.variants : Array.isArray(data.skus) ? data.skus : [],
+    supplier: data.supplier ?? null,
+  };
+
+  const missing = buildMissing(product);
+  const local = !configuredEndpoint;
   return {
     ok: true,
-    mode: "REMOTE_COLLECTOR",
+    mode: local ? "LOCAL_HTML_COLLECTOR" : "REMOTE_COLLECTOR",
     collectedAt: new Date().toISOString(),
-    product: {
-      ...parsed,
-      title: data.title ?? data.subject ?? null,
-      priceMinCny: data.priceMinCny ?? data.price?.min ?? null,
-      priceMaxCny: data.priceMaxCny ?? data.price?.max ?? null,
-      images: Array.isArray(data.images) ? data.images : [],
-      minOrderQty: data.minOrderQty ?? data.moq ?? null,
-      variants: Array.isArray(data.variants) ? data.variants : Array.isArray(data.skus) ? data.skus : [],
-      supplier: data.supplier ?? null,
-    },
+    product,
     raw: data,
-    missing: [],
-    message: "1688 수집 API에서 상품 상세 데이터를 가져왔습니다.",
+    missing,
+    message: missing.length === 0
+      ? `1688 ${local ? "로컬 HTML" : "외부 API"} Collector에서 주요 필드를 모두 수집했습니다.`
+      : `1688 ${local ? "로컬 HTML" : "외부 API"} Collector가 ${6 - missing.length}/6개 핵심 필드를 수집했습니다. 누락: ${missing.join(", ")}`,
   };
 }
