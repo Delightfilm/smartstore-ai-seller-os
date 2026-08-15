@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Local preview stability layer — layout proportions are intentionally untouched. */
+html,
+body,
+#root {
+  width: 100%;
+  min-width: 320px;
+  min-height: 100%;
+  margin: 0;
+}
+
+html { overflow-x: auto; }
+body { min-height: 100vh; }
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+/* Prevent long Korean/ID strings from visually escaping their own boxes. */
+[data-app] p,
+[data-app] div,
+[data-app] span,
+[data-app] td,
+[data-app] th,
+.min-h-screen p,
+.min-h-screen div,
+.min-h-screen span,
+.min-h-screen td,
+.min-h-screen th {
+  overflow-wrap: break-word;
+}
+
+/* Keep controls from shrinking into each other in dense toolbars. */
+[data-app] .btn,
+[data-app] .chip {
+  flex-shrink: 0;
+}
+
+/* Tables may scroll horizontally instead of collapsing columns over text. */
+[data-app] table,
+.min-h-screen table {
+  max-width: 100%;
+}
+
+@media (max-width: 720px) {
+  [data-app] main { padding: 14px !important; }
+}
