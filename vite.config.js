@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import fs from "node:fs";
 import path from "node:path";
+import { local1688CollectorPlugin } from "./server/collect1688.js";
 
 const SYNC_URL = "https://dzgczkwwezzsfqnjdqen.supabase.co/functions/v1/seller-os-preview-sync?key=T7WLiKHsYrJ1cEPf6o28QMQcrkhzM0YL";
 const STATE_FILE = ".preview-sync-state.json";
@@ -64,7 +65,6 @@ function livePreviewSync() {
         const actual = countOccurrences(before, op.find);
 
         if (actual === 0 && before.includes(op.replace)) {
-          // Already applied locally, e.g. after a restart/state-file loss.
           state.applied.push(op.id);
           changed = true;
           continue;
@@ -107,7 +107,7 @@ function livePreviewSync() {
 }
 
 export default defineConfig({
-  plugins: [react(), livePreviewSync()],
+  plugins: [react(), local1688CollectorPlugin(), livePreviewSync()],
   server: {
     host: "127.0.0.1",
     port: 5173,
