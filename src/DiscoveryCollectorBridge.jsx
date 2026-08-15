@@ -24,7 +24,8 @@ function CollectorPanel() {
   };
 
   const p = result?.product;
-  const remote = result?.mode === "REMOTE_COLLECTOR";
+  const collectorActive = result?.mode === "REMOTE_COLLECTOR" || result?.mode === "LOCAL_HTML_COLLECTOR";
+  const local = result?.mode === "LOCAL_HTML_COLLECTOR";
 
   return (
     <div className="surf fade" style={{ padding: 16 }}>
@@ -36,7 +37,7 @@ function CollectorPanel() {
             <span className="chip" style={{ background: "var(--accent-soft)", color: "var(--accent)" }}>TEST</span>
           </div>
           <div className="t3" style={{ fontSize: 11.5, marginTop: 3 }}>
-            실제 1688 상품 URL을 넣어 Collector 진입부와 표준 데이터 변환을 확인합니다.
+            실제 1688 상품 URL을 넣어 상품명·가격·이미지·MOQ·옵션·공급자 수집을 시험합니다.
           </div>
         </div>
         <div className="t3 mono" style={{ fontSize: 10.5 }}>URL → offerId → Collector → Normalizer</div>
@@ -71,8 +72,10 @@ function CollectorPanel() {
         <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(210px,1fr))", gap: 10 }}>
           <div className="surf-2" style={{ borderRadius: 6, padding: 12 }}>
             <div className="flex items-center" style={{ gap: 7, marginBottom: 9 }}>
-              <Check size={14} style={{ color: remote ? "var(--pos)" : "var(--warn)" }} />
-              <span style={{ fontSize: 12.5, fontWeight: 600 }}>{remote ? "실데이터 수집 완료" : "URL 파싱 완료"}</span>
+              <Check size={14} style={{ color: collectorActive ? "var(--pos)" : "var(--warn)" }} />
+              <span style={{ fontSize: 12.5, fontWeight: 600 }}>
+                {collectorActive ? (local ? "로컬 실수집 완료" : "API 실수집 완료") : "URL 파싱 완료"}
+              </span>
             </div>
             <div className="t3" style={{ fontSize: 11.5, lineHeight: 1.55 }}>{result.message}</div>
             <a href={p.canonicalUrl} target="_blank" rel="noreferrer" className="flex items-center" style={{ gap: 5, marginTop: 9, fontSize: 11.5, color: "var(--accent)", textDecoration: "none" }}>
@@ -89,6 +92,7 @@ function CollectorPanel() {
               ["MOQ", p.minOrderQty ?? "미수집"],
               ["이미지", `${p.images?.length || 0}개`],
               ["옵션", `${p.variants?.length || 0}개`],
+              ["공급자", p.supplier?.name || p.supplier || "미수집"],
             ].map(([k, v]) => (
               <div key={k} className="flex items-center justify-between" style={{ gap: 12, fontSize: 11.5, padding: "3px 0" }}>
                 <span className="t3">{k}</span>
@@ -104,7 +108,7 @@ function CollectorPanel() {
               return (
                 <div key={field} className="flex items-center justify-between" style={{ gap: 10, padding: "3px 0", fontSize: 11.5 }}>
                   <span>{field}</span>
-                  <span style={{ color: missing ? "var(--warn)" : "var(--pos)" }}>{missing ? "API 연결 필요" : "수집됨"}</span>
+                  <span style={{ color: missing ? "var(--warn)" : "var(--pos)" }}>{missing ? "미수집" : "수집됨"}</span>
                 </div>
               );
             })}
