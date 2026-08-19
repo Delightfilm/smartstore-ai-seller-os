@@ -125,7 +125,7 @@ Then verify:
 
 - Status: COMPLETE
 - Branch: `feat/discovery-collector-integration`
-- Implementation commit: pending; replace after commit creation
+- Implementation commit: `a9014a3` (`Integrate Discovery collector`)
 - Files changed: added `src/CollectorPanel.jsx` and `test/collector1688.test.js`; directly integrated the panel in `SmartStoreSellerOS.jsx`; removed `DiscoveryCollectorBridge.jsx` and its `main.jsx` wiring; added explicit collector availability modeling; hardened the local request boundary; added the `npm test` script.
 - `npm ci`: PASS (`97` packages installed, `0` vulnerabilities).
 - `npm test`: PASS (`10/10` Node built-in tests). Coverage includes canonical URL acceptance, protocol/host/path rejection, offerId mismatch, client canonicalization, `beginAmount`, availability modes, malformed JSON, and exact request shape.
