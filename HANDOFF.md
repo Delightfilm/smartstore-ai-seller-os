@@ -159,7 +159,7 @@ Then verify:
 
 - Status: COMPLETE
 - Branch: `feat/1688-collector-data-quality`
-- Commit: branch commit created after this record; use the pushed branch tip for review.
+- Implementation commit: `2f93697` (`Harden 1688 collector data quality`).
 - Files changed:
   - `server/parse1688.js`: deterministic structured product extraction and field provenance.
   - `server/collect1688.js`: parser integration and CDP transport-only disconnect.
