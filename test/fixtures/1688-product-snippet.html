@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+  <head>
+    <meta property="og:title" content="Sanitized fallback title - 阿里巴巴">
+    <meta property="og:image" content="https://cdn.example.test/fallback.jpg">
+    <script type="application/json">
+      {"price":"9999","companyName":"Unrelated Navigation Company","value":"nav","image":"https://cdn.example.test/ui-icon.png"}
+    </script>
+    <script>
+      window.__INIT_DATA__ = {
+        "product": {
+          "subject": "Sanitized product title",
+          "priceRange": [{"price":"0.14"},{"price":"0.18"}],
+          "minOrderQuantity": "100",
+          "imageList": [
+            "https://cdn.example.test/product-a.jpg",
+            "https://cdn.example.test/product-a.jpg",
+            {"url":"https://cdn.example.test/product-b.jpg"},
+            "javascript:alert(1)"
+          ],
+          "skuModel": {
+            "skuProps": [
+              {"prop":"Color","value":[{"name":"Blue"},{"name":"Blue"},{"name":"Red"}]},
+              {"name":"Pack","values":["10 units"]}
+            ]
+          },
+          "supplier": {"companyName":"Sanitized Supplier"}
+        }
+      };
+    </script>
+  </head>
+  <body>Sanitized fixture only.</body>
+</html>

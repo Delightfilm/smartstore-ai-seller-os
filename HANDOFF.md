@@ -19,8 +19,9 @@ Validate and harden real 1688 product-data extraction before connecting collecte
 - Local 1688 collection is development-only through Playwright CDP on `127.0.0.1:9222`.
 - Hosted builds without `VITE_1688_COLLECTOR_URL` show `HOSTED_UNAVAILABLE` and do not attempt local Chrome access.
 - Server request validation, 2 KB body limit, exact request shape checks, strict canonical 1688 navigation validation, and regression tests are present.
-- `npm test` currently uses Node's built-in test runner and passed 10/10 tests in the previous task.
-- A live canonical 1688 request returned HTTP 200 and the CDP browser remained reachable after request cleanup.
+- `npm test` uses Node's built-in test runner and now covers deterministic extraction, payload normalization, timeout, and CDP cleanup (17/17 passing).
+- Collector extraction now accepts only scoped product structures/metadata and reports per-field provenance; generic page-wide price/image/value/company regexes were removed.
+- CDP cleanup closes only the Playwright transport, not the dedicated Chrome process.
 - GitHub issue #5 still tracks rotation/revocation of the previously committed preview-sync credential-like value. This is a credential-owner action and is not a blocker for collector development.
 
 ## Product invariants
@@ -32,7 +33,9 @@ Validate and harden real 1688 product-data extraction before connecting collecte
 - Do not fabricate unavailable 1688 fields. Unknown values must remain `null`/empty and be reported as missing.
 - Never commit full authenticated page HTML, cookies, local browser profiles, tokens, account identifiers, or other session data.
 
-## Next task for Codex
+## Completed task for Codex
+
+Status: completed on `feat/1688-collector-data-quality`; factual results are in the completion record below. The next action is ChatGPT review. Do not repeat this task unless review finds a defect.
 
 ### Branch
 
@@ -154,8 +157,36 @@ Then verify:
 
 ## Codex completion record
 
-- Status: NOT STARTED
+- Status: COMPLETE
 - Branch: `feat/1688-collector-data-quality`
-- Commit: none
-- Tests: not run for this task
-- Next action: execute the data-quality task above, update this section with factual results, commit, and push the branch for ChatGPT review.
+- Commit: branch commit created after this record; use the pushed branch tip for review.
+- Files changed:
+  - `server/parse1688.js`: deterministic structured product extraction and field provenance.
+  - `server/collect1688.js`: parser integration and CDP transport-only disconnect.
+  - `src/collector1688.js`: 45-second AbortController timeout, strict normalized payload types, URL/variant bounds and deduplication, malformed payload rejection.
+  - `test/fixtures/1688-product-snippet.html`: minimal sanitized product/decoy fixture; no authenticated page or session data.
+  - `test/collector1688.test.js`: parser, decoy, missing-data, normalizer, invalid JSON, timeout/no-retry, and CDP cleanup coverage.
+- Verification:
+  - Baseline before changes: `npm ci` PASS (97 packages, 0 vulnerabilities), `npm test` PASS (10/10), `npm run build` PASS (Vite 8.2.1, 1,797 modules).
+  - Final `npm ci`: PASS (97 packages, 0 vulnerabilities).
+  - Final `npm test`: PASS (17/17).
+  - Final `npm run build`: PASS (Vite 8.2.1, 1,797 modules).
+  - `npm run dev`: PASS at `http://127.0.0.1:5173/`.
+  - `npm run 1688:browser`: PASS; remote debugging ready at `http://127.0.0.1:9222`.
+  - Existing `/` Seller OS login, dashboard, and Discovery UI: PASS; Collector input rendered exactly once and no Vite overlay/recorded console error was present.
+  - `/sourcing-console`: PASS as an independent route with its existing controls; no Vite overlay.
+  - Timeout UI: PASS; a controlled hanging fetch produced the deterministic visible `45초 안에 완료되지 않았습니다` panel error, with one request and no retry.
+  - Malformed request: PASS; rejected with HTTP 400. Known live request under the security screen: HTTP 409 `BROWSER_VERIFY_REQUIRED`.
+  - CDP lifecycle: PASS; `/json/version` returned HTTP 200 after collector cleanup.
+- Known live offer audit (`985165165739`):
+  - An initial pre-hardening request returned HTTP 200 before the security screen appeared.
+  - `title`: present and matched the then-visible page title; old source was a broad title/meta fallback.
+  - `priceMinCny` / `priceMaxCny`: present as `0.14` / `0.14`, but visible-page correspondence was not verified; old source was a generic price regex.
+  - `minOrderQty`: missing (`null`); unverified.
+  - `images`: present (24) but incorrect; inspection showed Alibaba/site UI assets, confirming the broad URL scan false-positive risk.
+  - `variants`: missing (empty); unverified.
+  - `supplier`: present as `澜澳日用品(扬州)有限公司`, but visible-page correspondence was not verified; old source was a generic company-name fallback.
+  - Subsequent and final attempts displayed 1688 security verification, so current post-hardening live field comparison is `HUMAN_REQUIRED`. No bypass was attempted.
+- Security/hygiene: no full authenticated HTML, cookies, browser profile, token, account identifier, or session data was saved or added to Git.
+- Unresolved issue: a human must complete the 1688 security verification before the hardened parser can be compared field-by-field against the visible live offer.
+- Next action: ChatGPT should review the pushed branch, especially the allowed structured-data paths and internal Playwright CDP transport disconnect; do not merge to `main` until approved.

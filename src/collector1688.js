@@ -57,6 +57,85 @@ export function getCollectorAvailability(env = import.meta.env) {
   };
 }
 
+export const DEFAULT_COLLECTOR_TIMEOUT_MS = 45_000;
+const MAX_IMAGES = 24;
+const MAX_VARIANTS = 36;
+
+function finiteNumber(value, { positive = false } = {}) {
+  if (value == null || value === "") return null;
+  const number = Number(value);
+  if (!Number.isFinite(number) || (positive ? number <= 0 : number < 0)) return null;
+  return number;
+}
+
+function httpUrl(value) {
+  if (typeof value !== "string") return null;
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === "http:" || url.protocol === "https:" ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeImages(value) {
+  if (!Array.isArray(value)) return [];
+  return [...new Set(value.map(httpUrl).filter(Boolean))].slice(0, MAX_IMAGES);
+}
+
+function normalizeVariants(value) {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set();
+  const result = [];
+  for (const entry of value) {
+    const name = typeof entry === "string" ? entry.trim() : typeof entry?.name === "string" ? entry.name.trim() : "";
+    if (!name || seen.has(name)) continue;
+    seen.add(name);
+    result.push({ id: result.length + 1, name });
+    if (result.length >= MAX_VARIANTS) break;
+  }
+  return result;
+}
+
+function normalizeSupplier(value) {
+  const name = typeof value === "string" ? value.trim() : typeof value?.name === "string" ? value.name.trim() : "";
+  return name ? { name: name.slice(0, 300) } : null;
+}
+
+function normalizeProvenance(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const fields = new Set(["title", "priceMinCny", "priceMaxCny", "images", "minOrderQty", "variants", "supplier"]);
+  return Object.fromEntries(Object.entries(value)
+    .filter(([field, source]) => fields.has(field) && typeof source === "string" && source.trim())
+    .map(([field, source]) => [field, source.trim().slice(0, 200)]));
+}
+
+export function normalizeCollectorPayload(data, parsed) {
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    const error = new Error("1688 Collector 응답 형식이 올바르지 않습니다.");
+    error.code = "INVALID_COLLECTOR_PAYLOAD";
+    throw error;
+  }
+  if (data.offerId != null && String(data.offerId) !== parsed.offerId) {
+    const error = new Error("1688 Collector 응답의 offerId가 요청과 일치하지 않습니다.");
+    error.code = "INVALID_COLLECTOR_PAYLOAD";
+    throw error;
+  }
+
+  const titleValue = data.title ?? data.subject;
+  return {
+    ...parsed,
+    title: typeof titleValue === "string" && titleValue.trim() ? titleValue.trim().slice(0, 1000) : null,
+    priceMinCny: finiteNumber(data.priceMinCny ?? data.price?.min),
+    priceMaxCny: finiteNumber(data.priceMaxCny ?? data.price?.max),
+    images: normalizeImages(data.images),
+    minOrderQty: finiteNumber(data.minOrderQty ?? data.moq, { positive: true }),
+    variants: normalizeVariants(data.variants ?? data.skus),
+    supplier: normalizeSupplier(data.supplier),
+    provenance: normalizeProvenance(data.provenance),
+  };
+}
+
 function buildMissing(product) {
   const missing = [];
   if (!product.title) missing.push("title");
@@ -68,36 +147,55 @@ function buildMissing(product) {
   return missing;
 }
 
-export async function collect1688Product(input) {
+export async function collect1688Product(input, options = {}) {
   const parsed = parse1688OfferUrl(input);
-  const availability = getCollectorAvailability();
+  const availability = getCollectorAvailability(options.env ?? import.meta.env);
 
   if (!availability.available) {
     throw new Error("호스팅 환경에서는 1688 수집기를 사용할 수 없습니다. 운영용 VITE_1688_COLLECTOR_URL을 설정하세요.");
   }
 
-  const response = await fetch(availability.endpoint, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ url: parsed.canonicalUrl, offerId: parsed.offerId }),
-  });
+  const timeoutMs = Number.isFinite(options.timeoutMs) && options.timeoutMs > 0
+    ? options.timeoutMs
+    : DEFAULT_COLLECTOR_TIMEOUT_MS;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  let response;
+  let data;
+  try {
+    response = await (options.fetchImpl ?? fetch)(availability.endpoint, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ url: parsed.canonicalUrl, offerId: parsed.offerId }),
+      signal: controller.signal,
+    });
+    try {
+      data = await response.json();
+    } catch (error) {
+      if (response.ok) {
+        const payloadError = new Error("1688 Collector가 올바른 JSON 응답을 반환하지 않았습니다.");
+        payloadError.code = "INVALID_COLLECTOR_PAYLOAD";
+        throw payloadError;
+      }
+      data = {};
+    }
+  } catch (error) {
+    if (error?.name === "AbortError" || controller.signal.aborted) {
+      const timeoutError = new Error(`1688 수집 요청이 ${Math.ceil(timeoutMs / 1000)}초 안에 완료되지 않았습니다. 브라우저 상태를 확인하고 다시 시도하세요.`);
+      timeoutError.code = "COLLECT_TIMEOUT";
+      throw timeoutError;
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 
-  const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     const message = data?.message || `1688 수집 오류 (HTTP ${response.status})`;
     throw new Error(message);
   }
 
-  const product = {
-    ...parsed,
-    title: data.title ?? data.subject ?? null,
-    priceMinCny: data.priceMinCny ?? data.price?.min ?? null,
-    priceMaxCny: data.priceMaxCny ?? data.price?.max ?? null,
-    images: Array.isArray(data.images) ? data.images : [],
-    minOrderQty: data.minOrderQty ?? data.moq ?? null,
-    variants: Array.isArray(data.variants) ? data.variants : Array.isArray(data.skus) ? data.skus : [],
-    supplier: data.supplier ?? null,
-  };
+  const product = normalizeCollectorPayload(data, parsed);
 
   const missing = buildMissing(product);
   const local = availability.mode === "LOCAL_BROWSER_COLLECTOR";

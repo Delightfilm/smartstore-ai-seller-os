@@ -1,4 +1,7 @@
 import { chromium } from "playwright-core";
+import { parse1688Html } from "./parse1688.js";
+
+export { parse1688Html } from "./parse1688.js";
 
 const MAX_REQUEST_BYTES = 2048;
 
@@ -61,113 +64,6 @@ async function readCollectorRequest(req) {
   return parseCollectorRequestBody(Buffer.concat(chunks).toString("utf8"));
 }
 
-function decodeHtml(value = "") {
-  return value
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">");
-}
-
-function firstMatch(text, patterns) {
-  for (const pattern of patterns) {
-    const match = text.match(pattern);
-    if (match?.[1]) return decodeHtml(match[1]).trim();
-  }
-  return null;
-}
-
-function numeric(value) {
-  if (value == null) return null;
-  const n = Number(String(value).replace(/,/g, "").trim());
-  return Number.isFinite(n) ? n : null;
-}
-
-function unique(list) {
-  return [...new Set(list.filter(Boolean))];
-}
-
-function normalizeImage(url) {
-  if (!url) return null;
-  const value = decodeHtml(url).replace(/\\u002F/g, "/").replace(/\\\//g, "/");
-  if (value.startsWith("//")) return `https:${value}`;
-  if (value.startsWith("http://") || value.startsWith("https://")) return value;
-  return null;
-}
-
-function parsePrice(html) {
-  const direct = firstMatch(html, [
-    /"price"\s*:\s*"?([0-9]+(?:\.[0-9]+)?)"?/i,
-    /"priceMin"\s*:\s*"?([0-9]+(?:\.[0-9]+)?)"?/i,
-    /"minPrice"\s*:\s*"?([0-9]+(?:\.[0-9]+)?)"?/i,
-  ]);
-  const range = html.match(/(?:priceRange|price_range)[^\d]{0,40}([0-9]+(?:\.[0-9]+)?)[^\d]{1,12}([0-9]+(?:\.[0-9]+)?)/i);
-  if (range) return { min: numeric(range[1]), max: numeric(range[2]) };
-  const price = numeric(direct);
-  return { min: price, max: price };
-}
-
-function parseImages(html) {
-  const images = [];
-  const og = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i);
-  if (og?.[1]) images.push(normalizeImage(og[1]));
-  const urlRegex = /(https?:\\?\/\\?\/[^"'<>\s]+?\.(?:jpg|jpeg|png|webp))(?:\?[^"'<>\s]*)?/gi;
-  let match;
-  while ((match = urlRegex.exec(html)) && images.length < 40) images.push(normalizeImage(match[1]));
-  return unique(images).slice(0, 24);
-}
-
-function parseVariants(html) {
-  const names = [];
-  const regexes = [
-    /"skuName"\s*:\s*"([^"]+)"/gi,
-    /"specName"\s*:\s*"([^"]+)"/gi,
-    /"value"\s*:\s*"([^"]+)"\s*,\s*"name"/gi,
-  ];
-  for (const regex of regexes) {
-    let match;
-    while ((match = regex.exec(html)) && names.length < 50) {
-      const name = decodeHtml(match[1]).replace(/\\u([0-9a-f]{4})/gi, (_, h) => String.fromCharCode(parseInt(h, 16)));
-      if (name.length > 0 && name.length < 100) names.push(name);
-    }
-  }
-  return unique(names).slice(0, 36).map((name, index) => ({ id: index + 1, name }));
-}
-
-export function parse1688Html(html, offerId, canonicalUrl) {
-  const title = firstMatch(html, [
-    /<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i,
-    /<title>([^<]+)<\/title>/i,
-    /"subject"\s*:\s*"([^"]+)"/i,
-    /"offerTitle"\s*:\s*"([^"]+)"/i,
-  ])?.replace(/[-_]?阿里巴巴.*$/i, "").trim() || null;
-  const price = parsePrice(html);
-  const images = parseImages(html);
-  const minOrderQty = numeric(firstMatch(html, [
-    /"minOrderQuantity"\s*:\s*"?([0-9]+)"?/i,
-    /"minOrder"\s*:\s*"?([0-9]+)"?/i,
-  ]));
-  const supplierName = firstMatch(html, [
-    /"companyName"\s*:\s*"([^"]+)"/i,
-    /"shopName"\s*:\s*"([^"]+)"/i,
-    /"sellerName"\s*:\s*"([^"]+)"/i,
-  ]);
-  const variants = parseVariants(html);
-  return {
-    source: "1688",
-    offerId,
-    canonicalUrl,
-    title,
-    priceMinCny: price.min,
-    priceMaxCny: price.max,
-    images,
-    minOrderQty,
-    variants,
-    supplier: supplierName ? { name: supplierName } : null,
-  };
-}
-
 export function parseSupported1688Url(input) {
   let parsed;
   try {
@@ -199,6 +95,17 @@ async function browserReady() {
   } catch {
     return false;
   }
+}
+
+export function disconnectFromCdp(browser) {
+  const implementation = browser?._connection?.toImpl?.(browser);
+  const connection = implementation?._connection;
+  if (!connection || typeof connection.close !== "function") {
+    const error = new Error("Playwright CDP transport를 안전하게 해제하지 못했습니다.");
+    error.code = "CDP_DISCONNECT_UNAVAILABLE";
+    throw error;
+  }
+  connection.close();
 }
 
 export async function collect1688FromBrowser({ url, offerId }) {
@@ -249,7 +156,9 @@ export async function collect1688FromBrowser({ url, offerId }) {
       await page.close().catch(() => {});
     }
   } finally {
-    await browser.close().catch(() => {});
+    // browser.close() would terminate the dedicated Chrome process connected over CDP.
+    // Close only this Playwright transport so the signed-in browser remains available.
+    disconnectFromCdp(browser);
   }
 }
 
