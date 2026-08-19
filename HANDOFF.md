@@ -2,34 +2,32 @@
 
 ## Current objective
 
-Stabilize the repository and Vercel build workflow before expanding 1688 collection features.
+Move from repository stabilization to a clean, testable 1688 Discovery integration while preserving the existing SmartStore Seller OS UI.
 
-## Current known state
+## Stable state
 
 - Repository: `Delightfilm/smartstore-ai-seller-os`
 - Stable branch: `main`
-- Existing main UI is based on `src/SmartStoreSellerOS.jsx`.
-- `src/DiscoveryCollectorBridge.jsx` injects the 1688 URL test panel into the Discovery screen.
-- `src/SourcingConsole.jsx` is a separate experimental route and must not replace the main UI.
-- Local 1688 collection uses Playwright CDP against a dedicated logged-in browser on `127.0.0.1:9222`.
-- Vite dev middleware exposes `/api/collect-1688` locally.
-- This local API does not exist automatically in Vercel production.
-- A normal Windows user-directory checkout successfully ran `npm install` and `npm run build` with Vite 8.2.1.
-- Earlier `EPERM` build failures were caused by working under `C:\Windows\System32`, not by frontend source bundling.
+- PR #4 (`Stabilize repository build and local 1688 collector`) was reviewed by ChatGPT and squash-merged into `main` as `a7be9cc`.
+- Vercel build checks for the stabilization branch passed; production deployment for the merged commit is being handled through the connected Git integration.
+- `node_modules/` and generated build output are no longer intended to be tracked.
+- Dependencies are pinned and `package-lock.json` is aligned.
+- `npm ci`, `npm run build`, `npm run dev`, and `npm run 1688:browser` passed in the normal Windows user-directory checkout.
+- The local 1688 collector is development-only and uses Playwright CDP with the dedicated browser on `127.0.0.1:9222`.
+- Hosted production does not attempt to connect to the user's local Chrome. Without `VITE_1688_COLLECTOR_URL`, it reports an explicit unavailable state.
+- Server-side 1688 URL validation is present and arbitrary authenticated-browser navigation is blocked.
+- `beginAmount` is no longer guessed as both price and MOQ.
+- The hardcoded preview-sync endpoint/key-like value was removed; preview sync is opt-in via `PREVIEW_SYNC_URL`.
+- ChatGPT additionally hardened preview-sync path containment after reviewing the Codex branch.
+- GitHub issue #5 tracks rotation/revocation of the previously committed preview-sync credential-like value. This is a human/credential-owner action.
 
-## Important repository problems already identified
+## Product invariants
 
-1. `node_modules` is heavily tracked in Git.
-2. `dist/` and generated files may also be present/tracked.
-3. No proper `.gitignore` existed in the initial repository state.
-4. `package.json` contained `playwright-core` while the committed lockfile was stale before local `npm install` refreshed it.
-5. Several dependencies use `latest`, reducing build reproducibility.
-6. `vite.config.js` contains a development live-preview sync mechanism with a hardcoded Supabase URL/key-like value.
-7. The 1688 local collector exists only through Vite `configureServer`, so hosted production needs a separate remote collector endpoint or an explicit unavailable state.
-8. Collector mode labels are inconsistent (`LOCAL_BROWSER_COLLECTOR` vs `LOCAL_HTML_COLLECTOR`).
-9. Server-side collector URL validation should be added before authenticated browser navigation.
-10. `beginAmount` should not be guessed as both price and MOQ without stronger evidence.
-11. The DOM/MutationObserver bridge used to inject the Discovery collector panel is fragile but should not be refactored during the repository-stabilization task.
+- Preserve the existing `src/SmartStoreSellerOS.jsx` main UI and overall layout.
+- Do not replace the main UI with `src/SourcingConsole.jsx`.
+- `/sourcing-console` remains experimental/separate.
+- Do not implement Vercel-to-local-Chrome connectivity.
+- Do not expand into SmartStore auto-registration, LLM screening, or detailed page generation during this task.
 
 ## Next task for Codex
 
@@ -37,84 +35,96 @@ Stabilize the repository and Vercel build workflow before expanding 1688 collect
 
 Create:
 
-`chore/repo-build-stabilization`
+`feat/discovery-collector-integration`
 
 ### Goal
 
-Produce a clean, reproducible repository and production build without redesigning the application.
+Remove the fragile DOM/MutationObserver bridge and make the 1688 collector a first-class part of the existing Discovery screen, then add targeted regression/security tests around the collector boundary.
 
 ### Required work
 
-1. Confirm current path is a normal user directory and not `C:\Windows\System32`.
-2. Inspect current dirty state before modifying anything.
-3. Add a root `.gitignore` covering at least:
-   - `node_modules/`
-   - `dist/`
-   - `.vite/`
-   - `.vercel/`
-   - `.env`
-   - `.env.*`
-   - `!.env.example`
-   - `.preview-sync-state.json`
-   - `.1688-browser-profile/`
-   - `*.log`
-4. Remove generated directories from Git tracking while preserving required local files as appropriate.
-5. Make `package.json` and `package-lock.json` consistent.
-6. Replace broad `latest` dependency declarations with the currently working installed versions, avoiding unnecessary upgrades.
-7. Verify `npm ci` works from the cleaned dependency metadata.
-8. Keep the 1688 browser collector development-only.
-9. Hosted production must not attempt to connect to `127.0.0.1:9222`.
-10. If no production collector URL is configured, surface a clear hosted-unavailable state rather than silently calling a nonexistent local API.
-11. Move/guard the live-preview sync so it is explicitly development-only and remove credential-like hardcoding from source. Record any value that should be rotated because it was already committed.
-12. Fix the local collector mode-string mismatch.
-13. Add server-side validation for supported 1688 product URLs before `page.goto()`.
-14. Review `beginAmount` parsing and prefer `null` over an unsupported guess.
-15. Add Vercel SPA fallback configuration if needed so direct `/sourcing-console` navigation/refresh works, without swallowing future `/api/*` routes.
-16. Do not substantially modify `SmartStoreSellerOS.jsx` or redesign the UI.
+1. Start from current `main`:
+   - `git checkout main`
+   - `git pull origin main`
+   - confirm the checkout is not under `C:\Windows\System32`
+   - confirm a clean working tree before starting
+2. Create `feat/discovery-collector-integration`.
+3. Inspect how the existing Discovery screen is rendered inside `SmartStoreSellerOS.jsx`.
+4. Replace the current `DiscoveryCollectorBridge.jsx` MutationObserver/portal insertion with a direct React integration at the correct Discovery location.
+   - Preserve the existing visual placement as closely as possible.
+   - Do not redesign the page.
+   - Prefer extracting/reusing a `CollectorPanel` component rather than duplicating markup.
+   - Once direct integration is verified, remove obsolete bridge wiring from `main.jsx`; delete the bridge file only if it is no longer referenced.
+5. Add a small explicit collector availability presentation without making network calls just to detect mode:
+   - local dev + no remote endpoint => local browser collector mode
+   - configured `VITE_1688_COLLECTOR_URL` => remote collector mode
+   - hosted build + no remote endpoint => hosted unavailable
+   Keep this consistent with the current collection behavior and do not fake availability.
+6. Harden the local Vite middleware request boundary:
+   - reject malformed JSON cleanly
+   - require the expected request shape
+   - enforce a small request-body size limit appropriate for a URL/offerId request
+   - keep the existing strict supported-1688 URL validation before browser navigation
+7. Verify CDP lifecycle behavior. A collection request must not unexpectedly terminate the dedicated Chrome/Edge process or destroy the user's authenticated browser session. If current `browser.close()` semantics in this implementation terminate the remote browser, change the cleanup to disconnect safely while still closing only the page created by the request. Record the observed behavior.
+8. Add focused automated tests with minimal new tooling. Prefer Node's built-in test runner if practical rather than adding a large test framework. Cover at least:
+   - accepted canonical 1688 offer URL
+   - rejected non-HTTPS URL
+   - rejected non-`detail.1688.com` host
+   - rejected unsupported path
+   - offerId mismatch rejection
+   - client URL canonicalization behavior
+   - parser does not infer price/MOQ from `beginAmount`
+   If testing Vite middleware directly would require disproportionate scaffolding, keep middleware checks as documented integration tests instead of adding a heavy dependency.
+9. Do not implement a production remote collector in this task. Preserve the replaceable `VITE_1688_COLLECTOR_URL` interface.
+10. Do not touch the separate Supabase credential rotation issue except to keep it documented as unresolved/human-required.
 
 ## Required verification
 
-Run and record results for:
+Run and record:
 
 ```bash
 npm ci
 npm run build
-```
-
-Then verify the dev server can start:
-
-```bash
 npm run dev
 ```
 
-If feasible on Windows, also verify the browser launcher starts:
+Run the new automated tests.
+
+On Windows, also verify:
 
 ```bash
 npm run 1688:browser
 ```
 
-A full live 1688 collection test may require human login/captcha and can remain marked as human-required if blocked by that dependency.
+Then verify:
 
-## Git handoff protocol for this task
+- `/` renders the existing SmartStore Seller OS UI.
+- Discovery screen renders the 1688 collector panel directly, without MutationObserver/portal discovery.
+- Navigation away from and back to Discovery does not duplicate the panel.
+- `/sourcing-console` still renders independently.
+- Dedicated browser CDP endpoint stays reachable after a collector request lifecycle test.
+- If a full live 1688 collection is blocked by login/captcha, record it as human-required rather than bypassing security verification.
 
-- Do not commit generated `node_modules` or `dist` content.
+## Git handoff protocol
+
 - Do not merge into `main`.
-- After tests, update this file with the actual outcome.
-- Commit the stabilization changes on `chore/repo-build-stabilization`.
-- Push that branch to GitHub so ChatGPT can review it without the user copying logs manually.
+- Update this file with factual results at completion.
+- Commit and push `feat/discovery-collector-integration` for ChatGPT review.
+- Do not commit generated output, browser profiles, cookies, secrets, or `.env` files.
+
+## Previous stabilization completion
+
+- PR #4: merged.
+- `npm ci`: PASS.
+- `npm run build`: PASS with Vite 8.2.1.
+- `npm run dev`: PASS.
+- `npm run 1688:browser`: PASS; CDP endpoint returned HTTP 200.
+- Remaining human/security action: rotate/revoke the previously committed preview-sync credential-like value tracked in issue #5.
 
 ## Codex completion record
 
-- Status: COMPLETE
-- Branch: `chore/repo-build-stabilization`
-- Implementation commit: `f16b410` (`Stabilize repository build`)
-- Files changed: added `.gitignore`, `.env.example`, and `vercel.json`; updated dependency metadata, Vite configuration, collector client/server handling, collector UI mode detection, and this handoff; removed 6,733 `node_modules/` files from Git tracking while preserving local installation behavior.
-- `npm ci`: PASS (`97` packages installed, `0` vulnerabilities). The first sandboxed attempt hit `EPERM` on the user npm cache; the normal user-context rerun passed.
-- `npm run build`: PASS with Vite `8.2.1` (`1,797` modules transformed).
-- `npm run dev`: PASS; Vite started at `http://127.0.0.1:5173/`. Browser checks confirmed the home login UI and direct `/sourcing-console` UI render with content and no Vite error overlay.
-- `npm run 1688:browser`: PASS; Chrome launched with the dedicated profile and `http://127.0.0.1:9222/json/version` returned HTTP `200`.
-- Collector checks: PASS; unsupported hosts/protocols/routes are rejected, the dev API returned HTTP `400` for an external host before browser navigation, and `beginAmount` is no longer guessed as price or MOQ.
-- Production behavior: the local CDP collector plugin is registered only for Vite dev; a production build without `VITE_1688_COLLECTOR_URL` shows an explicit hosted-unavailable error. `vercel.json` rewrites only `/sourcing-console` to the SPA entry and does not catch `/api/*`.
-- Security: the hardcoded preview-sync URL/key-like value was removed. Preview sync is development-only and opt-in through `PREVIEW_SYNC_URL`. The previously committed preview-sync credential-like value should be treated as exposed and rotated.
-- Unresolved: a full live 1688 product collection still requires a human-authenticated 1688 session and any captcha/security verification. A production remote collector URL is not configured in this repository.
-- Next action: ChatGPT should review the pushed branch diff, ensure the previously committed preview-sync credential is rotated, and decide how to provision the production collector before merge/deploy.
+- Status: NOT STARTED
+- Branch: `feat/discovery-collector-integration`
+- Commit: none
+- Tests: not run for this task
+- Next action: Codex should execute the task above, update this section with results, commit, and push the branch for ChatGPT review.
