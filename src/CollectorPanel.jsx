@@ -1,13 +1,13 @@
-import React, { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
+import React, { useState } from "react";
 import { AlertTriangle, Check, ExternalLink, Loader2, Package, Plus } from "lucide-react";
-import { collect1688Product } from "./collector1688.js";
+import { collect1688Product, getCollectorAvailability } from "./collector1688.js";
 
-function CollectorPanel() {
+export default function CollectorPanel() {
   const [url, setUrl] = useState("");
   const [status, setStatus] = useState("IDLE");
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
+  const availability = getCollectorAvailability();
 
   const run = async () => {
     setStatus("LOADING");
@@ -17,18 +17,18 @@ function CollectorPanel() {
       const next = await collect1688Product(url);
       setResult(next);
       setStatus("SUCCESS");
-    } catch (e) {
-      setError(e?.message || "상품 수집에 실패했습니다.");
+    } catch (nextError) {
+      setError(nextError?.message || "상품 수집에 실패했습니다.");
       setStatus("ERROR");
     }
   };
 
-  const p = result?.product;
+  const product = result?.product;
   const collectorActive = result?.mode === "REMOTE_COLLECTOR" || result?.mode === "LOCAL_BROWSER_COLLECTOR";
   const local = result?.mode === "LOCAL_BROWSER_COLLECTOR";
 
   return (
-    <div className="surf fade" style={{ padding: 16 }}>
+    <div className="surf fade" data-testid="discovery-collector-panel" style={{ padding: 16 }}>
       <div className="flex items-start justify-between" style={{ gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
         <div>
           <div className="flex items-center" style={{ gap: 7 }}>
@@ -40,19 +40,29 @@ function CollectorPanel() {
             실제 1688 상품 URL을 넣어 상품명·가격·이미지·MOQ·옵션·공급자 수집을 시험합니다.
           </div>
         </div>
-        <div className="t3 mono" style={{ fontSize: 10.5 }}>URL → offerId → Collector → Normalizer</div>
+        <div style={{ textAlign: "right" }}>
+          <div className="chip" data-collector-mode={availability.mode} style={{
+            display: "inline-flex",
+            background: availability.available ? "var(--pos-soft)" : "var(--warn-soft)",
+            color: availability.available ? "var(--pos)" : "var(--warn)",
+          }}>
+            {availability.label}
+          </div>
+          <div className="t3" style={{ fontSize: 10.5, marginTop: 4 }}>{availability.description}</div>
+        </div>
       </div>
 
       <div className="flex" style={{ gap: 8, flexWrap: "wrap" }}>
         <input
           className="inp"
           value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && status !== "LOADING" && run()}
+          onChange={(event) => setUrl(event.target.value)}
+          onKeyDown={(event) => event.key === "Enter" && status !== "LOADING" && availability.available && run()}
           placeholder="https://detail.1688.com/offer/123456789.html"
+          disabled={!availability.available}
           style={{ flex: "1 1 420px" }}
         />
-        <button className="btn btn-md btn-primary" onClick={run} disabled={status === "LOADING"}>
+        <button className="btn btn-md btn-primary" onClick={run} disabled={status === "LOADING" || !availability.available}>
           {status === "LOADING" ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
           {status === "LOADING" ? "가져오는 중" : "상품 가져오기"}
         </button>
@@ -68,7 +78,7 @@ function CollectorPanel() {
         </div>
       )}
 
-      {status === "SUCCESS" && p && (
+      {status === "SUCCESS" && product && (
         <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(210px,1fr))", gap: 10 }}>
           <div className="surf-2" style={{ borderRadius: 6, padding: 12 }}>
             <div className="flex items-center" style={{ gap: 7, marginBottom: 9 }}>
@@ -78,25 +88,25 @@ function CollectorPanel() {
               </span>
             </div>
             <div className="t3" style={{ fontSize: 11.5, lineHeight: 1.55 }}>{result.message}</div>
-            <a href={p.canonicalUrl} target="_blank" rel="noreferrer" className="flex items-center" style={{ gap: 5, marginTop: 9, fontSize: 11.5, color: "var(--accent)", textDecoration: "none" }}>
+            <a href={product.canonicalUrl} target="_blank" rel="noreferrer" className="flex items-center" style={{ gap: 5, marginTop: 9, fontSize: 11.5, color: "var(--accent)", textDecoration: "none" }}>
               <ExternalLink size={12} /> 1688 원본 열기
             </a>
           </div>
 
           <div className="surf-2" style={{ borderRadius: 6, padding: 12 }}>
             {[
-              ["SOURCE", p.source],
-              ["OFFER ID", p.offerId],
-              ["상품명", p.title || "미수집"],
-              ["가격", p.priceMinCny == null ? "미수집" : `¥${p.priceMinCny}${p.priceMaxCny != null && p.priceMaxCny !== p.priceMinCny ? ` ~ ¥${p.priceMaxCny}` : ""}`],
-              ["MOQ", p.minOrderQty ?? "미수집"],
-              ["이미지", `${p.images?.length || 0}개`],
-              ["옵션", `${p.variants?.length || 0}개`],
-              ["공급자", p.supplier?.name || p.supplier || "미수집"],
-            ].map(([k, v]) => (
-              <div key={k} className="flex items-center justify-between" style={{ gap: 12, fontSize: 11.5, padding: "3px 0" }}>
-                <span className="t3">{k}</span>
-                <span className="num" style={{ textAlign: "right", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "68%" }}>{String(v)}</span>
+              ["SOURCE", product.source],
+              ["OFFER ID", product.offerId],
+              ["상품명", product.title || "미수집"],
+              ["가격", product.priceMinCny == null ? "미수집" : `¥${product.priceMinCny}${product.priceMaxCny != null && product.priceMaxCny !== product.priceMinCny ? ` ~ ¥${product.priceMaxCny}` : ""}`],
+              ["MOQ", product.minOrderQty ?? "미수집"],
+              ["이미지", `${product.images?.length || 0}개`],
+              ["옵션", `${product.variants?.length || 0}개`],
+              ["공급자", product.supplier?.name || product.supplier || "미수집"],
+            ].map(([key, value]) => (
+              <div key={key} className="flex items-center justify-between" style={{ gap: 12, fontSize: 11.5, padding: "3px 0" }}>
+                <span className="t3">{key}</span>
+                <span className="num" style={{ textAlign: "right", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "68%" }}>{String(value)}</span>
               </div>
             ))}
           </div>
@@ -117,44 +127,4 @@ function CollectorPanel() {
       )}
     </div>
   );
-}
-
-export default function DiscoveryCollectorBridge() {
-  const [mount, setMount] = useState(null);
-
-  useEffect(() => {
-    const sync = () => {
-      const heading = [...document.querySelectorAll("h1")].find((node) => node.textContent?.trim() === "발굴");
-      if (!heading) {
-        setMount((current) => {
-          if (current?.isConnected) current.remove();
-          return null;
-        });
-        return;
-      }
-
-      const header = heading.parentElement?.parentElement;
-      const page = header?.parentElement;
-      if (!header || !page) return;
-
-      let node = page.querySelector(":scope > [data-1688-collector-bridge]");
-      if (!node) {
-        node = document.createElement("div");
-        node.dataset["1688CollectorBridge"] = "1";
-        header.insertAdjacentElement("afterend", node);
-      }
-      setMount(node);
-    };
-
-    sync();
-    const observer = new MutationObserver(sync);
-    observer.observe(document.body, { childList: true, subtree: true });
-    return () => {
-      observer.disconnect();
-      const node = document.querySelector("[data-1688-collector-bridge]");
-      if (node) node.remove();
-    };
-  }, []);
-
-  return mount ? createPortal(<CollectorPanel />, mount) : null;
 }

@@ -28,6 +28,35 @@ export function parse1688OfferUrl(input) {
   };
 }
 
+export function getCollectorAvailability(env = import.meta.env) {
+  const endpoint = env?.VITE_1688_COLLECTOR_URL?.trim();
+  if (endpoint) {
+    return {
+      available: true,
+      mode: "REMOTE_COLLECTOR",
+      endpoint,
+      label: "원격 Collector",
+      description: "설정된 운영용 Collector API를 사용합니다.",
+    };
+  }
+  if (env?.DEV) {
+    return {
+      available: true,
+      mode: "LOCAL_BROWSER_COLLECTOR",
+      endpoint: "/api/collect-1688",
+      label: "로컬 브라우저",
+      description: "개발 모드 · 로그인된 1688 전용 브라우저가 필요합니다.",
+    };
+  }
+  return {
+    available: false,
+    mode: "HOSTED_UNAVAILABLE",
+    endpoint: null,
+    label: "호스팅 미지원",
+    description: "운영용 Collector URL이 설정되지 않았습니다.",
+  };
+}
+
 function buildMissing(product) {
   const missing = [];
   if (!product.title) missing.push("title");
@@ -41,15 +70,13 @@ function buildMissing(product) {
 
 export async function collect1688Product(input) {
   const parsed = parse1688OfferUrl(input);
-  const configuredEndpoint = import.meta.env.VITE_1688_COLLECTOR_URL;
-  const local = import.meta.env.DEV && !configuredEndpoint;
-  const endpoint = configuredEndpoint || (local ? "/api/collect-1688" : null);
+  const availability = getCollectorAvailability();
 
-  if (!endpoint) {
+  if (!availability.available) {
     throw new Error("호스팅 환경에서는 1688 수집기를 사용할 수 없습니다. 운영용 VITE_1688_COLLECTOR_URL을 설정하세요.");
   }
 
-  const response = await fetch(endpoint, {
+  const response = await fetch(availability.endpoint, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ url: parsed.canonicalUrl, offerId: parsed.offerId }),
@@ -73,9 +100,10 @@ export async function collect1688Product(input) {
   };
 
   const missing = buildMissing(product);
+  const local = availability.mode === "LOCAL_BROWSER_COLLECTOR";
   return {
     ok: true,
-    mode: local ? "LOCAL_BROWSER_COLLECTOR" : "REMOTE_COLLECTOR",
+    mode: availability.mode,
     collectedAt: new Date().toISOString(),
     product,
     raw: data,

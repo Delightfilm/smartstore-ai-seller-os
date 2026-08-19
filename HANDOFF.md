@@ -123,8 +123,19 @@ Then verify:
 
 ## Codex completion record
 
-- Status: NOT STARTED
+- Status: COMPLETE
 - Branch: `feat/discovery-collector-integration`
-- Commit: none
-- Tests: not run for this task
-- Next action: Codex should execute the task above, update this section with results, commit, and push the branch for ChatGPT review.
+- Implementation commit: `a9014a3` (`Integrate Discovery collector`)
+- Files changed: added `src/CollectorPanel.jsx` and `test/collector1688.test.js`; directly integrated the panel in `SmartStoreSellerOS.jsx`; removed `DiscoveryCollectorBridge.jsx` and its `main.jsx` wiring; added explicit collector availability modeling; hardened the local request boundary; added the `npm test` script.
+- `npm ci`: PASS (`97` packages installed, `0` vulnerabilities).
+- `npm test`: PASS (`10/10` Node built-in tests). Coverage includes canonical URL acceptance, protocol/host/path rejection, offerId mismatch, client canonicalization, `beginAmount`, availability modes, malformed JSON, and exact request shape.
+- `npm run build`: PASS with Vite `8.2.1` (`1,797` modules transformed).
+- `npm run dev`: PASS at `http://127.0.0.1:5173/`.
+- Browser/UI checks: PASS. The existing Seller OS login/dashboard layout remained intact; Discovery rendered exactly one direct collector panel and no bridge DOM; navigating away and back still rendered one panel; `/sourcing-console` rendered independently with zero collector panels; no Vite overlay or captured console errors appeared.
+- Availability checks: PASS. Dev without a remote URL displayed `LOCAL_BROWSER_COLLECTOR`. Production preview without a remote URL displayed `HOSTED_UNAVAILABLE` / `호스팅 미지원` with the collector input and button disabled. The configured-remote branch is covered by the automated availability test.
+- Middleware integration checks: PASS. Malformed JSON returned `400 MALFORMED_JSON`, missing fields returned `400 INVALID_REQUEST`, a body over 2 KB returned `413 REQUEST_TOO_LARGE`, and an unsupported host returned `400 INVALID_1688_URL` before browser navigation.
+- `npm run 1688:browser`: PASS. Chrome launched with the dedicated profile and the CDP endpoint returned HTTP `200`.
+- CDP lifecycle: PASS. A local API collection request for a canonical 1688 URL completed with HTTP `200`; the CDP endpoint returned HTTP `200` both before and after request cleanup. The Playwright `browser.close()` call disconnected the CDP transport without terminating the dedicated Chrome process or authenticated session, while the request-created page was closed.
+- React review: PASS. The panel is a top-level reusable component, derives availability during render without effect duplication, and adds no global listeners or probe requests.
+- Unresolved: no production remote collector was implemented, by design. Credential rotation/revocation remains human-required in GitHub issue #5.
+- Next action: ChatGPT should review the pushed branch and test evidence, then decide whether it is ready to merge. Do not merge until review is complete.
