@@ -107,7 +107,7 @@ A full live 1688 collection test may require human login/captcha and can remain 
 
 - Status: COMPLETE
 - Branch: `chore/repo-build-stabilization`
-- Commit: pending; replace with the implementation commit after commit creation
+- Implementation commit: `f16b410` (`Stabilize repository build`)
 - Files changed: added `.gitignore`, `.env.example`, and `vercel.json`; updated dependency metadata, Vite configuration, collector client/server handling, collector UI mode detection, and this handoff; removed 6,733 `node_modules/` files from Git tracking while preserving local installation behavior.
 - `npm ci`: PASS (`97` packages installed, `0` vulnerabilities). The first sandboxed attempt hit `EPERM` on the user npm cache; the normal user-context rerun passed.
 - `npm run build`: PASS with Vite `8.2.1` (`1,797` modules transformed).
