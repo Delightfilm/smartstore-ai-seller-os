@@ -40,7 +40,6 @@ function parsePrice(html) {
     /"price"\s*:\s*"?([0-9]+(?:\.[0-9]+)?)"?/i,
     /"priceMin"\s*:\s*"?([0-9]+(?:\.[0-9]+)?)"?/i,
     /"minPrice"\s*:\s*"?([0-9]+(?:\.[0-9]+)?)"?/i,
-    /"beginAmount"\s*:\s*"?([0-9]+(?:\.[0-9]+)?)"?/i,
   ]);
   const range = html.match(/(?:priceRange|price_range)[^\d]{0,40}([0-9]+(?:\.[0-9]+)?)[^\d]{1,12}([0-9]+(?:\.[0-9]+)?)/i);
   if (range) return { min: numeric(range[1]), max: numeric(range[2]) };
@@ -87,7 +86,6 @@ export function parse1688Html(html, offerId, canonicalUrl) {
   const minOrderQty = numeric(firstMatch(html, [
     /"minOrderQuantity"\s*:\s*"?([0-9]+)"?/i,
     /"minOrder"\s*:\s*"?([0-9]+)"?/i,
-    /"beginAmount"\s*:\s*"?([0-9]+)"?/i,
   ]));
   const supplierName = firstMatch(html, [
     /"companyName"\s*:\s*"([^"]+)"/i,
@@ -109,6 +107,30 @@ export function parse1688Html(html, offerId, canonicalUrl) {
   };
 }
 
+export function parseSupported1688Url(input) {
+  let parsed;
+  try {
+    parsed = new URL(String(input || "").trim());
+  } catch {
+    const error = new Error("올바른 1688 상품 URL이 아닙니다.");
+    error.code = "INVALID_1688_URL";
+    throw error;
+  }
+
+  const host = parsed.hostname.toLowerCase();
+  const match = parsed.pathname.match(/^\/offer\/(\d+)\.html$/i);
+  if (parsed.protocol !== "https:" || host !== "detail.1688.com" || !match) {
+    const error = new Error("https://detail.1688.com/offer/숫자.html 형식의 URL만 지원합니다.");
+    error.code = "INVALID_1688_URL";
+    throw error;
+  }
+
+  return {
+    offerId: match[1],
+    canonicalUrl: `https://detail.1688.com/offer/${match[1]}.html`,
+  };
+}
+
 async function browserReady() {
   try {
     const res = await fetch("http://127.0.0.1:9222/json/version", { signal: AbortSignal.timeout(1500) });
@@ -119,7 +141,14 @@ async function browserReady() {
 }
 
 export async function collect1688FromBrowser({ url, offerId }) {
-  const canonicalUrl = url || `https://detail.1688.com/offer/${offerId}.html`;
+  const validated = parseSupported1688Url(url);
+  if (offerId != null && String(offerId) !== validated.offerId) {
+    const error = new Error("URL의 offerId와 요청한 offerId가 일치하지 않습니다.");
+    error.code = "INVALID_1688_URL";
+    throw error;
+  }
+  const { canonicalUrl } = validated;
+  offerId = validated.offerId;
   if (!(await browserReady())) {
     const error = new Error("1688 전용 브라우저가 실행 중이 아닙니다. 새 CMD에서 npm run 1688:browser 를 실행하고, 열린 브라우저에서 1688 로그인 후 다시 시도하세요.");
     error.code = "BROWSER_NOT_READY";
@@ -183,7 +212,7 @@ export function local1688CollectorPlugin() {
           res.end(JSON.stringify(data));
         } catch (error) {
           const clientCodes = new Set(["BROWSER_NOT_READY", "BROWSER_VERIFY_REQUIRED"]);
-          res.statusCode = clientCodes.has(error?.code) ? 409 : 502;
+          res.statusCode = error?.code === "INVALID_1688_URL" ? 400 : clientCodes.has(error?.code) ? 409 : 502;
           res.end(JSON.stringify({ error: error?.code || "COLLECT_FAILED", message: error?.message || "1688 수집 실패" }));
         }
       });

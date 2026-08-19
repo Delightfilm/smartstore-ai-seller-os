@@ -105,15 +105,16 @@ A full live 1688 collection test may require human login/captcha and can remain 
 
 ## Codex completion record
 
-Replace this section when the task is complete.
-
-- Status: NOT STARTED
+- Status: COMPLETE
 - Branch: `chore/repo-build-stabilization`
-- Commit: none
-- Files changed: none yet
-- `npm ci`: not run for task branch
-- `npm run build`: not run for task branch
-- `npm run dev`: not run for task branch
-- `npm run 1688:browser`: not run for task branch
-- Unresolved: repository stabilization work listed above
-- Next action: Codex should execute the task, update this section, commit, and push the branch for ChatGPT review.
+- Commit: pending; replace with the implementation commit after commit creation
+- Files changed: added `.gitignore`, `.env.example`, and `vercel.json`; updated dependency metadata, Vite configuration, collector client/server handling, collector UI mode detection, and this handoff; removed 6,733 `node_modules/` files from Git tracking while preserving local installation behavior.
+- `npm ci`: PASS (`97` packages installed, `0` vulnerabilities). The first sandboxed attempt hit `EPERM` on the user npm cache; the normal user-context rerun passed.
+- `npm run build`: PASS with Vite `8.2.1` (`1,797` modules transformed).
+- `npm run dev`: PASS; Vite started at `http://127.0.0.1:5173/`. Browser checks confirmed the home login UI and direct `/sourcing-console` UI render with content and no Vite error overlay.
+- `npm run 1688:browser`: PASS; Chrome launched with the dedicated profile and `http://127.0.0.1:9222/json/version` returned HTTP `200`.
+- Collector checks: PASS; unsupported hosts/protocols/routes are rejected, the dev API returned HTTP `400` for an external host before browser navigation, and `beginAmount` is no longer guessed as price or MOQ.
+- Production behavior: the local CDP collector plugin is registered only for Vite dev; a production build without `VITE_1688_COLLECTOR_URL` shows an explicit hosted-unavailable error. `vercel.json` rewrites only `/sourcing-console` to the SPA entry and does not catch `/api/*`.
+- Security: the hardcoded preview-sync URL/key-like value was removed. Preview sync is development-only and opt-in through `PREVIEW_SYNC_URL`. The previously committed preview-sync credential-like value should be treated as exposed and rotated.
+- Unresolved: a full live 1688 product collection still requires a human-authenticated 1688 session and any captcha/security verification. A production remote collector URL is not configured in this repository.
+- Next action: ChatGPT should review the pushed branch diff, ensure the previously committed preview-sync credential is rotated, and decide how to provision the production collector before merge/deploy.

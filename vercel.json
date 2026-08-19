@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/sourcing-console",
+      "destination": "/index.html"
+    }
+  ]
+}

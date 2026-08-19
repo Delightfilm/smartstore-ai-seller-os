@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.vite/
+.vercel/
+
+.env
+.env.*
+!.env.example
+
+.preview-sync-state.json
+.1688-browser-profile/
+*.log
