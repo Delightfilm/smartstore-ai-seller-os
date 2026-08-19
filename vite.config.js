@@ -24,6 +24,11 @@ function saveState(root, state) {
   fs.writeFileSync(path.join(root, STATE_FILE), JSON.stringify(state, null, 2), "utf8");
 }
 
+function isPathInsideRoot(root, target) {
+  const relative = path.relative(path.resolve(root), path.resolve(target));
+  return relative === "" || (relative !== ".." && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative));
+}
+
 function livePreviewSync(syncUrl) {
   let busy = false;
   let timer;
@@ -52,7 +57,7 @@ function livePreviewSync(syncUrl) {
         }
 
         const target = path.resolve(root, op.path);
-        if (!target.startsWith(path.resolve(root))) {
+        if (!isPathInsideRoot(root, target)) {
           console.error(`[DelightFilm Sync] blocked path: ${op.path}`);
           continue;
         }
