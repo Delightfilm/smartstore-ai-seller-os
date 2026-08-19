@@ -1,5 +1,66 @@
 import { chromium } from "playwright-core";
 
+const MAX_REQUEST_BYTES = 2048;
+
+function requestError(code, message, status = 400) {
+  const error = new Error(message);
+  error.code = code;
+  error.status = status;
+  return error;
+}
+
+export function parseCollectorRequestBody(body) {
+  let input;
+  try {
+    input = JSON.parse(body);
+  } catch {
+    throw requestError("MALFORMED_JSON", "요청 본문이 올바른 JSON이 아닙니다.");
+  }
+
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    throw requestError("INVALID_REQUEST", "요청 본문은 url과 offerId를 포함한 객체여야 합니다.");
+  }
+
+  const keys = Object.keys(input);
+  const expectedKeys = new Set(["url", "offerId"]);
+  if (keys.length !== expectedKeys.size || keys.some((key) => !expectedKeys.has(key))) {
+    throw requestError("INVALID_REQUEST", "요청 본문에는 url과 offerId만 포함해야 합니다.");
+  }
+
+  if (typeof input.url !== "string" || !input.url.trim() || input.url.length > 1024) {
+    throw requestError("INVALID_REQUEST", "url은 1,024자 이하의 문자열이어야 합니다.");
+  }
+  if (typeof input.offerId !== "string" || !/^\d{1,32}$/.test(input.offerId)) {
+    throw requestError("INVALID_REQUEST", "offerId는 숫자로 된 문자열이어야 합니다.");
+  }
+
+  return { url: input.url.trim(), offerId: input.offerId };
+}
+
+async function readCollectorRequest(req) {
+  if (!String(req.headers?.["content-type"] || "").toLowerCase().startsWith("application/json")) {
+    throw requestError("UNSUPPORTED_MEDIA_TYPE", "Content-Type은 application/json이어야 합니다.", 415);
+  }
+
+  const declaredLength = Number(req.headers?.["content-length"] || 0);
+  if (Number.isFinite(declaredLength) && declaredLength > MAX_REQUEST_BYTES) {
+    throw requestError("REQUEST_TOO_LARGE", "요청 본문이 너무 큽니다.", 413);
+  }
+
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of req) {
+    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    size += buffer.length;
+    if (size > MAX_REQUEST_BYTES) {
+      throw requestError("REQUEST_TOO_LARGE", "요청 본문이 너무 큽니다.", 413);
+    }
+    chunks.push(buffer);
+  }
+
+  return parseCollectorRequestBody(Buffer.concat(chunks).toString("utf8"));
+}
+
 function decodeHtml(value = "") {
   return value
     .replace(/&quot;/g, '"')
@@ -204,15 +265,13 @@ export function local1688CollectorPlugin() {
           return;
         }
         try {
-          let body = "";
-          for await (const chunk of req) body += chunk;
-          const input = body ? JSON.parse(body) : {};
+          const input = await readCollectorRequest(req);
           const data = await collect1688FromBrowser(input);
           res.statusCode = 200;
           res.end(JSON.stringify(data));
         } catch (error) {
           const clientCodes = new Set(["BROWSER_NOT_READY", "BROWSER_VERIFY_REQUIRED"]);
-          res.statusCode = error?.code === "INVALID_1688_URL" ? 400 : clientCodes.has(error?.code) ? 409 : 502;
+          res.statusCode = error?.status || (error?.code === "INVALID_1688_URL" ? 400 : clientCodes.has(error?.code) ? 409 : 502);
           res.end(JSON.stringify({ error: error?.code || "COLLECT_FAILED", message: error?.message || "1688 수집 실패" }));
         }
       });

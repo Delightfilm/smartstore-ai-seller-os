@@ -6,6 +6,7 @@ import {
   ArrowRight, Info, Wallet, Activity, Filter, Layers, Truck, ExternalLink, Plus,
   CircleDot, ShieldCheck, ShieldAlert, Boxes, Loader2, PanelLeftClose, PanelLeft,
 } from "lucide-react";
+import CollectorPanel from "./CollectorPanel.jsx";
 
 /* ============================================================================
    DESIGN TOKENS
@@ -950,6 +951,8 @@ function Discovery() {
           {running ? "발굴 중" : "발굴 실행"}
         </Btn>
       </div>
+
+      <CollectorPanel />
 
       {/* 검색 · 카테고리 */}
       <div className="surf" style={{ padding: 16 }}>
