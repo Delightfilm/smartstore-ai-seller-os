@@ -1,10 +1,9 @@
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import fs from "node:fs";
 import path from "node:path";
 import { local1688CollectorPlugin } from "./server/collect1688.js";
 
-const SYNC_URL = "https://dzgczkwwezzsfqnjdqen.supabase.co/functions/v1/seller-os-preview-sync?key=T7WLiKHsYrJ1cEPf6o28QMQcrkhzM0YL";
 const STATE_FILE = ".preview-sync-state.json";
 
 function countOccurrences(text, needle) {
@@ -25,7 +24,12 @@ function saveState(root, state) {
   fs.writeFileSync(path.join(root, STATE_FILE), JSON.stringify(state, null, 2), "utf8");
 }
 
-function livePreviewSync() {
+function isPathInsideRoot(root, target) {
+  const relative = path.relative(path.resolve(root), path.resolve(target));
+  return relative === "" || (relative !== ".." && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative));
+}
+
+function livePreviewSync(syncUrl) {
   let busy = false;
   let timer;
 
@@ -34,7 +38,9 @@ function livePreviewSync() {
     busy = true;
     try {
       const state = loadState(root);
-      const response = await fetch(`${SYNC_URL}&_=${Date.now()}`, {
+      const url = new URL(syncUrl);
+      url.searchParams.set("_", Date.now());
+      const response = await fetch(url, {
         headers: { "cache-control": "no-cache" },
       });
       if (!response.ok) throw new Error(`sync HTTP ${response.status}`);
@@ -51,7 +57,7 @@ function livePreviewSync() {
         }
 
         const target = path.resolve(root, op.path);
-        if (!target.startsWith(path.resolve(root))) {
+        if (!isPathInsideRoot(root, target)) {
           console.error(`[DelightFilm Sync] blocked path: ${op.path}`);
           continue;
         }
@@ -106,11 +112,21 @@ function livePreviewSync() {
   };
 }
 
-export default defineConfig({
-  plugins: [react(), local1688CollectorPlugin(), livePreviewSync()],
-  server: {
-    host: "127.0.0.1",
-    port: 5173,
-    strictPort: true,
-  },
+export default defineConfig(({ command, mode }) => {
+  const env = loadEnv(mode, process.cwd(), "");
+  const plugins = [react()];
+
+  if (command === "serve") {
+    plugins.push(local1688CollectorPlugin());
+    if (env.PREVIEW_SYNC_URL) plugins.push(livePreviewSync(env.PREVIEW_SYNC_URL));
+  }
+
+  return {
+    plugins,
+    server: {
+      host: "127.0.0.1",
+      port: 5173,
+      strictPort: true,
+    },
+  };
 });

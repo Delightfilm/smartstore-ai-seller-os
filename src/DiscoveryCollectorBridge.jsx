@@ -24,8 +24,8 @@ function CollectorPanel() {
   };
 
   const p = result?.product;
-  const collectorActive = result?.mode === "REMOTE_COLLECTOR" || result?.mode === "LOCAL_HTML_COLLECTOR";
-  const local = result?.mode === "LOCAL_HTML_COLLECTOR";
+  const collectorActive = result?.mode === "REMOTE_COLLECTOR" || result?.mode === "LOCAL_BROWSER_COLLECTOR";
+  const local = result?.mode === "LOCAL_BROWSER_COLLECTOR";
 
   return (
     <div className="surf fade" style={{ padding: 16 }}>

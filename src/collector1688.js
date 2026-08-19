@@ -42,7 +42,12 @@ function buildMissing(product) {
 export async function collect1688Product(input) {
   const parsed = parse1688OfferUrl(input);
   const configuredEndpoint = import.meta.env.VITE_1688_COLLECTOR_URL;
-  const endpoint = configuredEndpoint || "/api/collect-1688";
+  const local = import.meta.env.DEV && !configuredEndpoint;
+  const endpoint = configuredEndpoint || (local ? "/api/collect-1688" : null);
+
+  if (!endpoint) {
+    throw new Error("호스팅 환경에서는 1688 수집기를 사용할 수 없습니다. 운영용 VITE_1688_COLLECTOR_URL을 설정하세요.");
+  }
 
   const response = await fetch(endpoint, {
     method: "POST",
@@ -68,7 +73,6 @@ export async function collect1688Product(input) {
   };
 
   const missing = buildMissing(product);
-  const local = !configuredEndpoint;
   return {
     ok: true,
     mode: local ? "LOCAL_BROWSER_COLLECTOR" : "REMOTE_COLLECTOR",
