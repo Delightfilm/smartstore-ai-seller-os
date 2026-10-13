@@ -38,7 +38,11 @@ export async function search1688Products(query) {
     await input.press('Enter');
     await page.waitForTimeout(2500);
     await ensureAccess();
-    const links = await page.locator('a[href*="detail.1688.com/offer/"]').evaluateAll(es=>es.map(e=>({title:e.innerText.trim().slice(0,150),url:e.href.split('?')[0]})));
+    const links = await page.locator('a[href*="detail.1688.com/offer/"]').evaluateAll(es=>es.map(e=>{
+      const text=e.closest('.offer-item,.offer-card,li')?.innerText||'';
+      const quantities=[...text.matchAll(/(?:^|\s)(\d+)\s*(?:件|个|套)\s*起批/g)].map(m=>Number(m[1]));
+      return {title:e.innerText.trim().slice(0,150),url:e.href.split('?')[0],cardMoq:quantities.length===1?quantities[0]:null};
+    }));
     const seen = new Set();
     const offers = links.filter(e=>/^https:\/\/detail\.1688\.com\/offer\/\d+\.html$/.test(e.url)&&!seen.has(e.url)&&seen.add(e.url)).slice(0,12);
     return {offers,observedAt:new Date().toISOString(),source:'1688_BROWSER',message:offers.length ? '' : '검색 결과를 확인하지 못했습니다. 상품 URL을 직접 입력할 수 있습니다.'};

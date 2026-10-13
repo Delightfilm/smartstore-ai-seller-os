@@ -1,6 +1,8 @@
 import { chromium } from "playwright-core";
 import { parse1688Html } from "./parse1688.js";
 import { read1688Dom } from "./browser1688.js";
+import { supportedOfferUrl } from '../src/domain/source1688.js';
+import { researchObservation, readPackingRows, researchDiagnostics, readResearchState, chooseResearchHtml } from './research1688.js';
 
 export { parse1688Html } from "./parse1688.js";
 
@@ -66,27 +68,7 @@ async function readCollectorRequest(req) {
 }
 
 export function parseSupported1688Url(input) {
-  let parsed;
-  try {
-    parsed = new URL(String(input || "").trim());
-  } catch {
-    const error = new Error("올바른 1688 상품 URL이 아닙니다.");
-    error.code = "INVALID_1688_URL";
-    throw error;
-  }
-
-  const host = parsed.hostname.toLowerCase();
-  const match = parsed.pathname.match(/^\/offer\/(\d+)\.html$/i);
-  if (parsed.protocol !== "https:" || host !== "detail.1688.com" || !match) {
-    const error = new Error("https://detail.1688.com/offer/숫자.html 형식의 URL만 지원합니다.");
-    error.code = "INVALID_1688_URL";
-    throw error;
-  }
-
-  return {
-    offerId: match[1],
-    canonicalUrl: `https://detail.1688.com/offer/${match[1]}.html`,
-  };
+  return supportedOfferUrl(input);
 }
 
 async function browserReady() {
@@ -144,6 +126,9 @@ export async function collect1688FromBrowser({ url, offerId }) {
         error.code = "BROWSER_VERIFY_REQUIRED";
         throw error;
       }
+      if(parseSupported1688Url(finalUrl).offerId!==offerId){
+        throw Object.assign(new Error('수집 페이지의 상품 식별자가 요청과 다릅니다.'),{code:'INVALID_1688_URL'});
+      }
 
       const html = await page.content();
       const data = parse1688Html(html, offerId, canonicalUrl);
@@ -152,14 +137,18 @@ export async function collect1688FromBrowser({ url, offerId }) {
         data[key] = dom[key];
         data.provenance[key] = dom.provenance[key];
       }
+      const researchState=await readResearchState(page,offerId);
+      const researchHtml=chooseResearchHtml(html,researchState);
       return {
         ...data,
+        researchRaw:researchObservation({html:researchHtml,product:data,packingRows:await readPackingRows(page)}),
         collectedAt: new Date().toISOString(),
         diagnostics: {
           mode: "BROWSER_CDP",
           htmlBytes: html.length,
           finalUrl: canonicalUrl,
           pageTitle: titleText,
+          researchAdapter:{...researchDiagnostics(html),...researchState.diagnostics},
         },
       };
     } finally {

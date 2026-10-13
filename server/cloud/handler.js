@@ -3,7 +3,9 @@ import { validateCandidateUpdate } from '../candidateUpdate.js';
 import { renderDetail } from '../../src/purchaseAgency.js';
 import { reviewCandidate, researchMargins } from '../../src/researchReview.js';
 const shapes={list:['action','workspaceId'],events:['action','workspaceId','id'],export:['action','workspaceId','id'],update:['action','workspaceId','requestId','id','revision','terms','listing','comparisons','research','review'],search:['action','workspaceId','query'],collect:['action','workspaceId','url'],market:['action','workspaceId','id','revision','query']};
-export function createAgencyHandler({allowedOrigins,authenticate,storeFor}){
+const researchShapes={researchList:[],researchEnqueue:['requestId','kind','query','url'],researchRetry:['jobId'],workerConnect:['workerId'],workerHeartbeat:['workerId','leaseId'],workerClaim:['workerId'],workerStop:['workerId'],workerComplete:['workerId','jobId','leaseId','kind','urls','offers','observedAt','observation'],workerFail:['workerId','jobId','leaseId','code']};
+for(const [action,keys] of Object.entries(researchShapes))shapes[action]=['action','workspaceId',...keys];
+export function createAgencyHandler({allowedOrigins,authenticate,storeFor,researchFor}){
  if(!Array.isArray(allowedOrigins)||!allowedOrigins.length)throw failure('ORIGINS_REQUIRED');
  return async req=>{
   const origin=req.headers.get('origin');const allowed=origin!==null&&allowedOrigins.includes(origin);
@@ -25,6 +27,10 @@ export function createAgencyHandler({allowedOrigins,authenticate,storeFor}){
    const identity=await authenticate({authorization:req.headers.get('authorization'),workspaceId:input.workspaceId});
    if(identity.workspaceId!==input.workspaceId)throw failure('WORKSPACE_FORBIDDEN',403);
    const store=storeFor({...identity,requestId:input.requestId,authorization:req.headers.get('authorization')});
+   if(researchShapes[input.action]){
+    if(!researchFor)throw failure('RESEARCH_UNAVAILABLE',503);
+    return response(await researchFor(identity)(input));
+   }
    if(['search','collect','market'].includes(input.action))throw failure('COLLECTOR_UNAVAILABLE',503);
    if(input.action==='list')return response(await store.list());
    if(typeof input.id!=='string'||!/^\d{1,32}$/.test(input.id))throw failure('CANDIDATE_REQUIRED');

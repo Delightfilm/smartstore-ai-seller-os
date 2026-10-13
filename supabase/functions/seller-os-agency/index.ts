@@ -2,6 +2,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2.117.3';
 import { authenticateRequest } from '../../../server/cloud/auth.js';
 import { createCloudStore } from '../../../server/cloud/workflowStore.js';
 import { createAgencyHandler } from '../../../server/cloud/handler.js';
+import { researchJobsService } from '../../../server/cloud/researchJobs.js';
 
 // Runtime-provided keys stay on Supabase's server; never returned to the caller.
 const url=Deno.env.get('SUPABASE_URL')!;
@@ -18,5 +19,6 @@ const handler=createAgencyHandler({
   },
  }),
  storeFor:({userId,workspaceId,requestId,authorization})=>createCloudStore({client:userClient(authorization),writer,workspaceId,actorId:userId,requestId}),
+ researchFor:({userId,workspaceId})=>researchJobsService({writer,workspaceId,actorId:userId}),
 });
 Deno.serve(handler);

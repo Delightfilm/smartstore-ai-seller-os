@@ -10,7 +10,7 @@ export default function CollectorPanel() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
   const workflow=useWorkflow();
-  const availability = workflow?.config.mode==='cloud'?{available:false,mode:'COLLECTOR_UNAVAILABLE',label:'수집기 연결 대기',description:'저장된 후보는 아래 조사 기록에서 조회·편집합니다.'}:getCollectorAvailability();
+  const availability = workflow?.config.mode==='cloud'?{available:false,mode:'RESEARCH_QUEUE',label:'아래 자동 조사 사용',description:'클라우드에서는 아래 조사 대기열을 사용합니다. 조건을 통과한 상품만 후보로 저장됩니다.'}:getCollectorAvailability();
 
   const run = async () => {
     setStatus("LOADING");

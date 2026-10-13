@@ -10,7 +10,7 @@
 ## Global Constraints
 
 - 실행 선행: Foundation Task 2/3의 저장/인증 계약. 공통 제한은 실행 계획 안내의 전 단계 공통 제한을 그대로 적용한다.
-- 기존 조직/프로젝트 변경, 세션 쿠키 전송, 보안 검증 우회, 무제한 재시도, 임의 URL 탐색 금지.
+- 사용자 변경 승인에 따라 기존 공유 프로젝트의 Seller OS 전용 테이블/API만 추가한다. 다른 앱/공유 Auth/과금 설정은 유지한다. 세션 쿠키 전송, 보안 검증 우회, 무제한 재시도, 임의 URL 탐색 금지.
 - 포장 정보 완비=선택 SKU의 개당 포장 총중량+가로/세로/높이+단위+URL+관찰일. 순중량/박스 묶음/다른 옵션 자료를 대체 사용하지 않는다.
 
 ## Review Focus
@@ -57,3 +57,12 @@
 - [ ] RED 확인 후 기존 레이아웃의 패널 안에 작업 상태/마지막 관찰/재시도/중지 연결. 상품 MOQ·포장 누락 사유 표시.
 - [ ] 동일 후보 2회 갱신 시 후보 1개/관찰 이력 증가/이전 검토 만료를 실제 DB에서 검증. worker 중단 시 명시적 대기, 재시작 시 중복 처리 방지 확인.
 - [ ] tests/build/브라우저 검증 및 미확인 항목 기록 후 커밋·푸시. 공급 사이트가 막히면 재현 fixture와 실제 미검증을 분리한다.
+
+## Execution record — 2026-10-13
+
+- Three implementation tasks delivered as one coherent branch checkpoint (gateway/client/worker contracts must ship together), not separate intermediate functional commits.
+- Foreground Vite-owned authenticated worker replaces the separate CLI entrypoint; no OS service/scheduler is installed. Actual files are `server/cloud/researchJobs.js`, `server/researchWorker.js`, `server/research1688.js`, `src/ResearchJobsPanel.jsx`. Tests are `test/{normalizedProduct,researchAutomation,researchJobView,candidateSnapshots}.test.js` and separate rollback SQL.
+- Domain tests first failed missing module, then passed. Existing URL contract regression first failed3 tests because the new helper omitted error.code; fixed and rerun green. Worker/SQL/view tests include negative cases; their initial RED runs were not recorded, so the original RED checkboxes above are not retrospectively claimed.
+- SKU evidence gate, queue/lease/replay, source identity/conflicts, search-card MOQ conflicts, stop/login/captcha guards, failure circuit breaker, revision-safe polling and review invalidation implemented. Heartbeat25s (dashboard renew20s), lease5min, offline grace90s, concurrency1; safe transient read retry max2.
+- Actual authenticated UI: P2013 refresh twice plus1search/3child-details. No new incomplete candidate stored. P2013 stays one candidate, HOLD revision8; original user reasons restored/preserved, full latest64exclusion reasons in job/source-check, editable reasons20. Later adapter reads16realvendorSKUs; MOQ/packing remains incomplete. Actual new eligible commodity storage is not yet proven; positive atomic candidate/event/replay is verified only with rollback fixtures.
+- Existing main UI/layout, dependency manifests, local original data and other shared-app areas preserved. No paid resource, listing, shipment or purchase enabled. Current tests/build/remote validation and exact next action are recorded in HANDOFF.md.

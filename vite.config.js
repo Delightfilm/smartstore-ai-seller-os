@@ -7,6 +7,7 @@ import { agencyWorkflowPlugin } from "./server/agencyWorkflow.js";
 import { WorkflowStore } from "./server/workflowStore.js";
 import { seedP2013Research } from "./server/p2013Research.js";
 import { resolveWorkflowConfig } from './src/data/workflowConfig.js';
+import { researchWorkerPlugin } from './server/researchWorker.js';
 
 const STATE_FILE = ".preview-sync-state.json";
 
@@ -124,6 +125,9 @@ export default defineConfig(({ command, mode }) => {
   const plugins = [react()];
 
   if (command === "serve") {
+    if(env.VITE_WORKFLOW_MODE==='cloud'){
+      plugins.push(researchWorkerPlugin({...resolveWorkflowConfig({...env,MODE:mode,PROD:false}),workspaceId:env.VITE_SELLER_OS_WORKSPACE_ID}));
+    }
     if(env.VITE_WORKFLOW_MODE==='local'){
       plugins.push(local1688CollectorPlugin());
       const store = new WorkflowStore(path.resolve('.seller-os'));

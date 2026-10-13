@@ -38,6 +38,7 @@ export function AuthProvider({children}){
   if(error)throw new Error('인증번호/링크가 올바르지 않거나 만료됐습니다. 새 인증메일을 받아 주세요.');
  };
  const signOut=async()=>{
+  await client.localWorker('stop').catch(()=>{});
   session.current=null;client.invalidate();publishRecords([]);setRecordsLoaded(false);setUser(null);setStatus('signedOut');
   const {error}=await supabase.auth.signOut({scope:'local'});if(error)setError('로그아웃 후 세션 제거 상태를 확인하세요.');
  };

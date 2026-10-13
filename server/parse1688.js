@@ -81,7 +81,7 @@ function parseJson(value) {
   }
 }
 
-function structuredDocuments(html) {
+export function structuredDocuments(html) {
   const documents = [];
   for (const match of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) {
     const attributes = match[1];
@@ -108,7 +108,7 @@ function structuredDocuments(html) {
   return documents;
 }
 
-function productCandidates(documents) {
+export function productCandidates(documents) {
   const candidates = [];
   for (const document of documents) {
     const roots = Array.isArray(document.value) ? document.value : [document.value];
