@@ -1,5 +1,14 @@
 # HANDOFF.md
 
+## Cloud provisioning checkpoint — free quota blocked — 2026-10-13
+
+- Branch `codex/purchase-agency-pipeline`, implementation HEAD `c3e12d7`; working tree was clean. User completed Supabase login in a new in-app tab.
+- Created only the explicitly approved **Seller OS** organization, ID `fxdpzkavtwrrbojpwnnf`, on **Free ($0/month)**. Organization type N/A avoids inventing company-size information. Existing DF-AUTOSYNC and all existing projects remain untouched.
+- Actual new-project screen blocks creation: account owner has reached the **2 active free projects** limit; Create new project is disabled. No project, database, credentials, migration, paid subscription, shipment or listing created. New organization does not reset the account free-project quota.
+- Connector organization listing still exposed only DF-AUTOSYNC; `get_cost` for the new organization failed `UNAVAILABLE: MCP tool get_cost was not returned by tools/list`. No actual paid price is confirmed and no cost-confirmation or create-project call was made. Browser also displays a Supabase technical-issues notice; it is not evidence of the quota error being temporary.
+- Verification this checkpoint: current cwd/status/branch/remotes/log and visible organization/quota screen inspected; documentation-only changes, no application tests/build rerun. The 44/44 and build PASS below belong to the preceding code checkpoint, not this turn.
+- Next action requires user direction: approve investigation of the new organization's paid plan (exact price and payment still require confirmation), or keep cloud provisioning deferred and continue local implementation. Do not pause/delete/upgrade existing projects or use DF-AUTOSYNC as a workaround. Stages 1–5 and Foundation Task 1 remain incomplete. No merge/deployment.
+
 ## Execution checkpoint — foundation Task 1 partial — 2026-10-13
 
 - User approved execution plan. Proceeding with recommended Native execution, no further planning approval requested. Branch `codex/purchase-agency-pipeline`, base `15aff29`; existing user-designated checkout reused rather than creating an unrequested worktree.
