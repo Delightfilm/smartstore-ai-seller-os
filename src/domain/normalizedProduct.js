@@ -17,7 +17,7 @@ export function normalizeProduct(raw={}) {
   });
   return {source:'1688',offerId:identity?.offerId===String(raw.offerId)?String(raw.offerId):null,sourceUrl:identity?.canonicalUrl||null,
     title:typeof raw.title==='string'?raw.title.trim().slice(0,300):'',observedAt:raw.observedAt,skuObservations,
-    offerMoq:normalizeEvidence(raw.moq),cardMoq:normalizeEvidence(raw.cardMoq),skuLimitExceeded:input.length>36,
+    offerMoq:normalizeEvidence(raw.moq),cardMoq:normalizeEvidence(raw.cardMoq),skuLimitExceeded:input.length>36,...(typeof raw.skuSetComplete==='boolean'?{skuSetComplete:raw.skuSetComplete}:{}),
     images:Array.isArray(raw.images)?[...new Set(raw.images.filter(publicUrl))].slice(0,24):[],
     supplier:typeof raw.supplier==='string'?{name:raw.supplier.slice(0,200)}:null};
 }
@@ -25,6 +25,7 @@ export function checkSourcingEligibility(observation,{now=Date.now()}={}) {
   const reasons=[];const add=message=>reasons.push(message);
   if(!observation.offerId||!observation.title)add('상품 식별자·상품명 미확인');
   if(!observation.skuObservations.length||observation.skuLimitExceeded)add('옵션 목록 미확인 또는 지원 개수 초과');
+  if(observation.skuSetComplete===false)add('원문 판매 옵션 전체 목록 미확인 (선택된 옵션만 읽었을 수 있음)');
   const seen=new Set();
   for(const s of observation.skuObservations){
     const prefix=s.label||'미확인 옵션',context={offerId:observation.offerId,skuId:s.skuId,now};

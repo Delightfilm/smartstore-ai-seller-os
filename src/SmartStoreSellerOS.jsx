@@ -958,7 +958,7 @@ function Discovery() {
           <div className="t3" style={{ fontSize: 12.5, marginTop: 3 }}>키워드로 소스 상품을 탐색하고 심사합니다</div>
         </div>
         <Btn variant="primary" size="md" icon={running ? Loader2 : Search} onClick={runDiscovery} disabled={running||cloud}>
-          {cloud?'수집기 연결 대기':running ? "발굴 중" : "발굴 실행"}
+          {cloud?'전체 발굴 미연동':running ? "발굴 중" : "발굴 실행"}
         </Btn>
       </div>
 
@@ -1020,7 +1020,7 @@ function Discovery() {
       {/* 퍼널 */}
       <div className="surf" style={{ padding: 16 }}>
         <div className="flex items-center justify-between" style={{ marginBottom: 14 }}>
-          <span className="eyebrow">{cloud?'발굴 작업 연결 대기':'발굴 잡 #331 — 캠핑의자 외 3'}</span>
+          <span className="eyebrow">{cloud?'전체 발굴 파이프라인 미연동 · 상품 조사는 위 자동화 패널':'발굴 잡 #331 — 캠핑의자 외 3'}</span>
           <span className="t3 num" style={{ fontSize: 11.5 }}>{cloud?'예산 미연동':'예산 31,200 / 50,000원'}</span>
         </div>
         <div className="flex items-end" style={{ gap: 2, height: 56 }}>
@@ -1045,7 +1045,7 @@ function Discovery() {
         </div>
       ) : list.length === 0 ? (
         <Empty icon={Search} title="조건에 맞는 상품이 없습니다"
-          body={cloud?'저장된 후보는 위 조사·검토 기록에서 확인하세요. 수집기 연결 후 새 상품을 탐색할 수 있습니다.':'등급 필터나 신뢰도 기준을 낮춰보세요. 발굴을 다시 실행하면 새 후보가 추가됩니다.'}
+          body={cloud?'저장된 후보는 위 조사·검토 기록에서 확인하세요. 새 상품 조사는 위 자동화 패널에서 로컬 작업자를 연결한 뒤 실행하세요.':'등급 필터나 신뢰도 기준을 낮춰보세요. 발굴을 다시 실행하면 새 후보가 추가됩니다.'}
           action={<Btn variant="ghost" size="md" onClick={() => { setGrades(["S", "A", "B", "C", "D"]); setMinConf(0); setHideRisk(false); setQ(""); setKw("전체"); }}>필터 초기화</Btn>} />
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(330px,1fr))", gap: 14 }}>

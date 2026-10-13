@@ -21,7 +21,7 @@ export function chooseResearchHtml(html,state) {
 
 // Deliberately small supported adapter. Unsupported/vendor-changed fields remain unknown.
 // No generated variant IDs, SKU-average prices, net weights, or carton dimensions.
-export function researchObservation({html,product,packingRows=[],observedAt=new Date().toISOString()}) {
+export function researchObservation({html,product,packingRows=[],skuSetComplete=true,observedAt=new Date().toISOString()}) {
   const {offerId,canonicalUrl:sourceUrl}=supportedOfferUrl(product.canonicalUrl);
   const candidates=productCandidates(structuredDocuments(html));
   const sources=candidates.filter(c=>!c.jsonLd&&String(c.product.offerId??c.product.id)===offerId&&c.product.skuModel?.skuInfoMap).map(c=>c.product);
@@ -29,7 +29,9 @@ export function researchObservation({html,product,packingRows=[],observedAt=new 
   const source=unique.length===1?unique[0]:null;
   const map=source?.skuModel?.skuInfoMap;
   const evidence=(value,unit,skuId,semantic=null,level='sku')=>({value,unit,sourceUrl,observedAt,kind:'observed',confirmed:value!==null&&value!==undefined,semantic,scope:{skuId,quantity:1,level}});
-  const moq=source?.minOrderQuantity??source?.minOrderQty??source?.minOrder??source?.moq??product.minOrderQty;
+  const sourceMoq=source?.minOrderQuantity??source?.minOrderQty??source?.minOrder??source?.moq;
+  const moqConflict=product.minOrderQtyConflict===true||sourceMoq!=null&&product.minOrderQty!=null&&Number(sourceMoq)!==Number(product.minOrderQty);
+  const moq=moqConflict?null:sourceMoq??product.minOrderQty;
   const offerMoq=evidence(moq,'piece',null,null,'offer');
   const skus=map&&typeof map==='object'&&!Array.isArray(map)?Object.entries(map).slice(0,37).map(([label,s])=>{
     const skuId=s?.skuId!=null?String(s.skuId):null;
@@ -41,7 +43,7 @@ export function researchObservation({html,product,packingRows=[],observedAt=new 
       grossWeight:evidence(pack?.grossWeight??null,pack?.weightUnit??null,skuId,'packed_gross'),
       dimensions:evidence(pack?.dimensions??null,pack?.lengthUnit??null,skuId,'packed_dimensions')};
   }):[];
-  return {offerId,title:product.title,sourceUrl,observedAt,moq:offerMoq,skus,images:product.images,supplier:product.supplier?.name};
+  return {offerId,title:product.title,sourceUrl,observedAt,moq:offerMoq,skus,skuSetComplete,images:product.images,supplier:product.supplier?.name};
 }
 
 export async function readPackingRows(page) {
@@ -78,6 +80,9 @@ export async function readResearchState(page,offerId) {
     const uniqueSources=[...new Map(matching.map(p=>[JSON.stringify({skus:p.skuModel.skuInfoMap,moq:p.minOrderQuantity??p.minOrderQty??p.minOrder??p.moq}),p])).values()];
     const p=uniqueSources.length===1?uniqueSources[0]:null;
     const options=[...document.querySelectorAll('.module-od-sku-selection .expand-view-item')];
+    const axisCount=document.querySelectorAll('.module-od-sku-selection .feature-item').length;
+    const axisSizes=[...document.querySelectorAll('.module-od-sku-selection .feature-item')].map(e=>e.querySelectorAll('.sku-filter-button').length||e.querySelectorAll('.expand-view-item').length);
+    const declaredCount=axisSizes.length&&axisSizes.every(n=>n>0)?axisSizes.reduce((total,n)=>total*n,1):null;
     const attrs=[...new Set(options.flatMap(e=>e.getAttributeNames()))];
     const publicLists=[];
     for(const row of options.slice(0,2)){
@@ -92,7 +97,7 @@ export async function readResearchState(page,offerId) {
     const labels=live?.map(s=>s.specAttrs);
     const liveModel=uniqueSources.length===0&&live&&labels.every(s=>typeof s==='string'&&s.trim())&&new Set(labels).size===labels.length?{offerId,skuModel:{skuInfoMap:Object.fromEntries(live.map(s=>[s.specAttrs,s]))}}:null;
     // Only explicitly named public product identifiers are read, never arbitrary globals/cookies.
-    return {conflict:uniqueSources.length>1||(uniqueSources.length===0&&lists.length>1),product:p?{offerId:p.offerId??p.id,minOrderQuantity:p.minOrderQuantity,minOrderQty:p.minOrderQty,skuModel:{skuInfoMap:Object.fromEntries(Object.entries(p.skuModel.skuInfoMap).slice(0,37).map(([label,s])=>[label,{skuId:s.skuId,price:s.price,canBookCount:s.canBookCount,stockCount:s.stockCount,minOrderQuantity:s.minOrderQuantity}]))}}:liveModel,
-      diagnostics:{knownProductRoots:roots.map(r=>!!r),skuRowAttributeNames:attrs.slice(0,20),liveSkuCount:live?.length??0,scaleText:document.querySelector('.module-od-sku-selection .sell-scale-info')?.textContent?.trim().slice(0,100)}};
+    return {skuSetComplete:!!p||!!liveModel&&declaredCount===live.length,conflict:uniqueSources.length>1||(uniqueSources.length===0&&lists.length>1),product:p?{offerId:p.offerId??p.id,minOrderQuantity:p.minOrderQuantity,minOrderQty:p.minOrderQty,minOrder:p.minOrder,moq:p.moq,skuModel:{skuInfoMap:Object.fromEntries(Object.entries(p.skuModel.skuInfoMap).slice(0,37).map(([label,s])=>[label,{skuId:s.skuId,price:s.price,canBookCount:s.canBookCount,stockCount:s.stockCount,minOrderQuantity:s.minOrderQuantity}]))}}:liveModel,
+      diagnostics:{knownProductRoots:roots.map(r=>!!r),skuRowAttributeNames:attrs.slice(0,20),liveSkuCount:live?.length??0,axisCount,declaredCount,scaleText:document.querySelector('.module-od-sku-selection .sell-scale-info')?.textContent?.trim().slice(0,100)}};
   },offerId);
 }

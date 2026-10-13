@@ -3,6 +3,7 @@ import { parse1688Html } from "./parse1688.js";
 import { read1688Dom } from "./browser1688.js";
 import { supportedOfferUrl } from '../src/domain/source1688.js';
 import { researchObservation, readPackingRows, researchDiagnostics, readResearchState, chooseResearchHtml } from './research1688.js';
+import { readSourcePageDiagnostics } from './sourcePageDiagnostics.js';
 
 export { parse1688Html } from "./parse1688.js";
 
@@ -133,6 +134,7 @@ export async function collect1688FromBrowser({ url, offerId }) {
       const html = await page.content();
       const data = parse1688Html(html, offerId, canonicalUrl);
       const dom = await read1688Dom(page);
+      data.minOrderQtyConflict=dom.minOrderQtyConflict;
       for (const key of Object.keys(dom.provenance)) {
         data[key] = dom[key];
         data.provenance[key] = dom.provenance[key];
@@ -141,7 +143,7 @@ export async function collect1688FromBrowser({ url, offerId }) {
       const researchHtml=chooseResearchHtml(html,researchState);
       return {
         ...data,
-        researchRaw:researchObservation({html:researchHtml,product:data,packingRows:await readPackingRows(page)}),
+        researchRaw:researchObservation({html:researchHtml,product:data,packingRows:await readPackingRows(page),skuSetComplete:researchState.skuSetComplete}),
         collectedAt: new Date().toISOString(),
         diagnostics: {
           mode: "BROWSER_CDP",
@@ -149,6 +151,7 @@ export async function collect1688FromBrowser({ url, offerId }) {
           finalUrl: canonicalUrl,
           pageTitle: titleText,
           researchAdapter:{...researchDiagnostics(html),...researchState.diagnostics},
+          publicLayout:await readSourcePageDiagnostics(page),
         },
       };
     } finally {
