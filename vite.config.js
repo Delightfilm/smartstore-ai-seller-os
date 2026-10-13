@@ -5,6 +5,7 @@ import path from "node:path";
 import { local1688CollectorPlugin } from "./server/collect1688.js";
 import { agencyWorkflowPlugin } from "./server/agencyWorkflow.js";
 import { WorkflowStore } from "./server/workflowStore.js";
+import { seedP2013Research } from "./server/p2013Research.js";
 
 const STATE_FILE = ".preview-sync-state.json";
 
@@ -120,7 +121,9 @@ export default defineConfig(({ command, mode }) => {
 
   if (command === "serve") {
     plugins.push(local1688CollectorPlugin());
-    plugins.push(agencyWorkflowPlugin({ store: new WorkflowStore(path.resolve('.seller-os')), config: env }));
+    const store = new WorkflowStore(path.resolve('.seller-os'));
+    seedP2013Research(store);
+    plugins.push(agencyWorkflowPlugin({ store, config: env }));
     if (env.PREVIEW_SYNC_URL) plugins.push(livePreviewSync(env.PREVIEW_SYNC_URL));
   }
 

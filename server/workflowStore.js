@@ -19,11 +19,11 @@ export class WorkflowStore {
     renameSync(temp,this.path);
     this.records=records;
   }
-  create(product){
+  create(product,{terms={},market=null,research=null,review=null}={}){
     const id=String(product.offerId||'');
     if(!/^\d{1,32}$/.test(id))throw new Error('상품 offerId가 올바르지 않습니다.');
     if(Object.hasOwn(this.records,id))return this.get(id);
-    const record={id,revision:1,product,createdAt:new Date().toISOString(),terms:{},market:null,listing:{},publication:{status:'NOT_PUBLISHED'}};
+    const record=structuredClone({id,revision:1,product,createdAt:new Date().toISOString(),terms,market,listing:{},research,review,publication:{status:'NOT_PUBLISHED'}});
     this.save({...this.records,[id]:record});
     return this.get(id);
   }

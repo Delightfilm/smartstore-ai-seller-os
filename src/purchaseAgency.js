@@ -12,6 +12,7 @@ export function evidenceChanged(before,after){
     terms:Object.entries(c.terms || {}).filter(([k])=>!confirmationKeys.includes(k)).sort(([a],[b])=>a.localeCompare(b)),
     listing:Object.entries(c.listing || {}).sort(([a],[b])=>a.localeCompare(b)),
     comparisons:(c.market?.competitors || []).map(r=>[r.id,r.comparable===true,numberOrNull(r.shippingKrw)]),
+    research:c.research || null,
   });
   return signature(before)!==signature(after);
 }

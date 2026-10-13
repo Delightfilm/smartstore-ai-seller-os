@@ -1,12 +1,13 @@
 import { collect1688FromBrowser, parseSupported1688Url } from './collect1688.js';
 import { search1688Products } from './browserSearch.js';
 import { searchNaverMarket } from './naverMarket.js';
-import { evaluateCandidate, renderDetail, numberOrNull, clearConfirmations, evidenceChanged } from '../src/purchaseAgency.js';
+import { renderDetail, numberOrNull, clearConfirmations, evidenceChanged } from '../src/purchaseAgency.js';
+import { researchMargins, reviewCandidate, invalidateReview } from '../src/researchReview.js';
 
 const shapes = {
   list:['action'], search:['action','query'], collect:['action','url'],
   market:['action','id','revision','query'],
-  update:['action','id','revision','terms','listing','comparisons'],
+  update:['action','id','revision','terms','listing','comparisons','research','review'],
   export:['action','id'],
 };
 const object = value => value && typeof value === 'object' && !Array.isArray(value);
@@ -32,18 +33,18 @@ export async function executeAgencyAction(input, {store, config = {}, providers 
     if (!previous) return store.create(product);
     const terms={...previous.terms};
     for(const key of ['supplierQuoteConfirmed','costsConfirmed','saleEligibilityConfirmed','imageRightsConfirmed','comparisonConfirmed','demandConfirmed'])terms[key]=false;
-    return store.update(offerId,previous.revision,{product,terms});
+    return store.update(offerId,previous.revision,{product,terms,review:invalidateReview(previous.review)});
   }
   const c = store.get(input.id);
   if (action === 'export') return {
     status:'PREPARATION_ONLY', candidate:c,
-    analysis:evaluateCandidate(c.product,c.market || {},c.terms), detail:renderDetail(c.product,{...c.listing,imageRightsConfirmed:c.terms.imageRightsConfirmed===true,selectedVariant:c.terms.selectedVariant}),
+    analysis:reviewCandidate(c), researchMargins:researchMargins(c.research || {}), detail:renderDetail(c.product,{...c.listing,imageRightsConfirmed:c.terms.imageRightsConfirmed===true,selectedVariant:c.terms.selectedVariant}),
     pending:['스토어 심사 및 커머스 API 권한','단건 공급·배송 견적·수요 및 판매 가능 여부 검증','이미지 사용권과 네이버 이미지 업로드','카테고리·고시정보·원산지·배송/반품/A/S 설정'],
   };
   if (c.revision !== input.revision) throw new Error('후보가 변경됐습니다. 최신 상태를 다시 불러오세요.');
   if (action === 'market') {
     const market = await (providers.market || searchNaverMarket)(input.query,config);
-    return store.update(c.id,c.revision,{market,terms:{...c.terms,comparisonConfirmed:false,demandConfirmed:false}});
+    return store.update(c.id,c.revision,{market,terms:clearConfirmations(c.terms),review:invalidateReview(c.review)});
   }
   for (const k of ['terms','listing']) if (input[k] !== undefined && !object(input[k])) throw new Error(`${k} 객체가 필요합니다.`);
   let market = c.market;
@@ -56,8 +57,26 @@ export async function executeAgencyAction(input, {store, config = {}, providers 
       return {...row,comparable:edit.comparable===true,shippingKrw:numberOrNull(edit.shippingKrw),observedShippingKrw:row.observedShippingKrw ?? row.shippingKrw,shippingEdited:row.shippingEdited || row.shippingKrw !== numberOrNull(edit.shippingKrw)};
     })};
   }
-  const patch={market,terms:input.terms || c.terms,listing:input.listing || c.listing};
-  if(evidenceChanged(c,patch))patch.terms=clearConfirmations(patch.terms);
+  let research=c.research,review=c.review;
+  if(input.research!==undefined){
+    if(!research || !object(input.research) || Object.keys(input.research).some(k=>k!=='salePriceKrw'))throw new Error('조사 편집은 시나리오 판매가만 허용합니다.');
+    const salePriceKrw=numberOrNull(input.research.salePriceKrw);
+    if(!salePriceKrw || salePriceKrw>100000000)throw new Error('시나리오 판매가는 0 초과 1억원 이하여야 합니다.');
+    research={...research,salePriceKrw};
+  }
+  if(input.review!==undefined){
+    const r=input.review;
+    if(!object(r) || Object.keys(r).some(k=>!['status','reasons','note'].includes(k)) || !['HOLD','REVIEW_REQUIRED'].includes(r.status))throw new Error('검토 상태는 보류 또는 재검토 필요만 저장할 수 있습니다.');
+    if(!Array.isArray(r.reasons) || r.reasons.length>20 || r.reasons.some(s=>typeof s!=='string'||s.length>500) || typeof r.note!=='string' || r.note.length>2000)throw new Error('검토 사유/메모 형식 또는 길이를 확인하세요.');
+    const reasons=r.reasons.map(s=>s.trim()).filter(Boolean);
+    if(r.status==='HOLD'&&!reasons.length)throw new Error('보류 사유를 입력하세요.');
+    review={status:r.status,reasons,note:r.note.trim(),stale:false,reviewedAt:new Date().toISOString()};
+  }
+  const patch={market,terms:input.terms || c.terms,listing:input.listing || c.listing,research,review};
+  if(evidenceChanged(c,patch)){
+    patch.terms=clearConfirmations(patch.terms);
+    patch.review=invalidateReview(review);
+  }
   return store.update(c.id,c.revision,patch);
 }
 

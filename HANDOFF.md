@@ -1,6 +1,36 @@
 # HANDOFF.md
 
-## Current checkpoint — 2026-10-13
+## Current checkpoint — dashboard research integration — 2026-10-13
+
+- Request: preserve the existing dashboard; persist/query research and connect review state, starting with P2013. **No shipment application, purchase/payment or product publication.**
+- Branch: `codex/purchase-agency-pipeline`; base commit `fcf9bcc`. Implementation and this checkpoint belong to the next task-branch commit (`Integrate persisted P2013 research and review into dashboard`); use branch HEAD for its final hash. No main merge or deployment authorized/performed.
+- Files: `src/{PurchaseAgencyPanel.jsx,ResearchReviewPanel.jsx,researchReview.js,purchaseAgency.js}`, `server/{p2013Research.js,workflowStore.js,agencyWorkflow.js}`, `vite.config.js`, `test/researchReview.test.js`, this handoff and the two 2026-10-13 research documents. `SmartStoreSellerOS.jsx`, dependencies and lockfile unchanged.
+- UI: existing **발굴 → 해외구매대행 조사 · 검토 기록 (로컬 전용)** panel. Stored candidate picker/status, observation sources, SKU/package/demand, editable hold reasons/note and scenario selling price. Three margin scenarios show assumptions, excluded costs and minimum price. Text status and labeled inputs; no main-layout replacement.
+- Persistence: ignored `.seller-os/candidates.json`, revision checks and atomic replacement. P2013 one-time seed preserves existing records/user edits. If already collected, only missing research/review/market is filled; product, terms and draft remain untouched. Server restart does not overwrite edits. Local dev only; hosted dashboard/backend unchanged and main KPI/order data remains mock.
+- Review safety: price/evidence changes invalidate prior confirmation and mark REVIEW_REQUIRED. Ordinary candidate saves do not clear stale review metadata; explicit review save is separate. Only HOLD/REVIEW_REQUIRED may be set, not READY. Startup loading disables edits. Dirty-state reload requires discard confirmation and permits stale-revision/timeout recovery.
+- P2013 restored after QA to **HOLD**, scenario selling price KRW 14,900, original research note/reasons and no quote approvals. Contribution: favorable **3,237**, conservative **1,317 (8.8%)**, stress **-1,517 KRW**. These are dated assumptions, not actual quotes or net profit. No new detail page produced.
+
+### Actual verification
+
+- Correct cwd/status/branch/remotes/log checked in the user workspace, never System32. `git diff --check`: PASS. Main UI and dependency/lockfile diffs empty.
+- TDD: new module/API tests failed before implementation, then passed. Review regression first failed with `TypeError: Cannot read properties of null (reading 'package')` for pre-existing P2013; fixed and rerun successfully.
+- `npm ci`: initially FAIL `EPERM unlink node_modules/@rolldown/binding-win32-x64-msvc/rolldown-binding.win32-x64-msvc.node` while Vite held the file. PowerShell process inspection was sandbox-blocked; escalated read identified exact repo Vite PID. `Stop-Process` failed `Object reference not set to an instance of an object`; exact-PID `taskkill` succeeded. Retry `npm ci`: **PASS**, 97 packages; audit still **8 vulnerabilities (2 moderate, 6 high)**. No forced dependency upgrades.
+- `npm test`: **40/40 PASS**; seed idempotence/existing-candidate preservation, exact margin math/invalid input, persistence/revision conflict, confirmation invalidation, forged review/scenario/external-action rejection, recollection and ordinary-save stale metadata preservation.
+- `npm run build`: **PASS**, Vite 8.2.1, 1,801 modules. `npm run dev -- --host 127.0.0.1 --port 5173 --strictPort`: **PASS**, restarted at `http://127.0.0.1:5173/`; dedicated authenticated Chrome session preserved.
+- Actual Chrome: dashboard/발굴 and saved P2013 load; note save/reload PASS; price 17,900 recalculates conservative contribution to **4,047** and invalidates review; ordinary confirmation save leaves stale=true/reviewedAt=null; restored 14,900 and HOLD. Canceling discard retains edits, accepting restores saved data; existing cable-tray candidate remains selectable. Refresh and server-restart persistence PASS. Concurrent API revision change causes visible conflict and confirmed reload recovers. No pageerrors or external non-GET requests in the final observed QA run.
+- QA selectors initially timed out on English `Discovery` (actual nav is `발굴`) and exact status label (select accessible name included its options). Corrected nav selector and added explicit `aria-label`; reruns PASS. Screenshot inspected at 1440×1000; no claim of mobile/production QA.
+- Independent read-only review: missing research for existing P2013 (Important), review metadata reuse and startup response race (Minor) addressed. Same reviewer rechecked fixes and found no remaining Important findings. Source research facts/rights/quotes are still unverified operationally; review did not recheck external prices. Scoped credential-pattern scan found no matches; local store/dependencies/build artifacts are not tracked.
+
+### Unresolved / exact next action
+
+1. Review this task-branch commit. No main merge/deployment without authorization. Research storage is local-only, not a production database or Quickstar/Commerce integration.
+2. Keep P2013 HOLD. Confirm packed gross weight/additional packaging, China freight, VAT/fees, supply and image rights; obtain differentiation or cheaper verified all-in cost before reconsidering. Do not promote scenario assumptions to quotes.
+3. Quickstar key/tokenKey/apiName/schema/idempotency/test-environment clarification and Naver store approval remain open. No real fulfillment or listing operations until separately authorized.
+4. Dependency advisories and previously tracked preview credential rotation remain separate work. Rollback source with a new revert commit while preserving `.seller-os/`; no external shipment/listing exists to undo.
+
+## Prior checkpoints — historical context
+
+## Previous checkpoint — 2026-10-13
 
 **Local overseas-purchase-agency preparation implemented; no product published.** User requested 1688 → domestic comparison → margin/demand → detail → registration, no owned inventory. Store review is incomplete, so actual Commerce OAuth/image upload/product POST is deferred. The older no-detail-work restriction below is superseded by the user's explicit request. Everything after “Historical handoff” is historical.
 
@@ -35,12 +65,35 @@
 ### Unresolved / Next task
 
 1. Review pushed branch; no main merge without authorization.
-2. Confirm Quickstar offers independent Seller OS developer API access, not only partner integrations. Compare matched VAT/parcel/inspection/packing/returns quotes with RootSmile and TossToss. No signup/payment/shipments/customer-data transfer without authorization.
-3. Confirm supplier single-unit MOQ, selected SKU package weight/dimensions, specs, image rights, 3 equivalent competitors and recent demand evidence; then complete costs and seller delivery/return policies. Do not call current candidate profitable or sale-ready.
+2. Quickstar independent developer API guide acquired/read (follow-up below). Clarify existing-account issued API key vs tokenKey/user-session, apiName, schema casing, rate limits/idempotency/test environment before integration. Compare matched VAT/parcel/inspection/packing/returns quotes with RootSmile and TossToss. No signup/payment/shipments/customer-data transfer without authorization.
+3. Prefer complete SKU-level package data and MOQ 1. P2013 reviewed and HOLD (follow-up below); do not draft/publish it until conservative costs and differentiation support a competitive price. Existing cable-tray candidate remains unapproved. Verify rights/specs/fulfillment for any next candidate.
 4. Once store approval/API eligibility is available, implement/test real Commerce OAuth/image upload/schema-valid registration and persistent duplicate/unknown-outcome controls; verify real returned product ID.
 5. Separate security upgrade review needed for dependency advisories. Prior preview-sync credential rotation remains owner issue #5.
 - Deferred minor: no in-panel stale-revision/timeout recovery while edits are dirty. Copy unsaved text before reloading browser and loading saved candidate, or unsaved edits are lost.
 - Local data/browser session preserved. No raw authenticated HTML, cookie, profile, secret or local store added to Git. Rollback source via revert on a new branch, preserving `.seller-os/`; no external listing/fulfillment rollback needed.
+
+### Research follow-up — 2026-10-13
+
+- Branch `codex/purchase-agency-pipeline`, inspected HEAD `fcf9bcc`; this follow-up is a local documentation update, no new commit/push or main merge.
+- Files changed: `HANDOFF.md`, `docs/research/2026-10-13-sourcing-and-forwarders.md`. No application source, UI, dependencies, candidate confirmation or economics changed.
+- Quickstar official Open API notice verified. User obtained issuance; authenticated guide read using user-provided access. Actual account API key not retrieved. No secret, account identifier or authenticated HTML stored in repo.
+- Documented create/update/discard/query plus service/transport/carrier/HS reference endpoints. Query describes tracking, weight/volume/charges/payment. Existing-account API key vs signup-returned tokenKey remains ambiguous; no API calls, signup, shipment or payment executed.
+- Offer `1089555932403`, black fixed 40cm: merchant table says product weight 500g (all four options); selected-option image says assembled 40×14×19cm, tray rim 4cm. These are NOT confirmed packed gross weight or parcel dimensions. Packaging verification remains incomplete; no freight/margin assumptions promoted to facts.
+- Checks: pwd/status/branch/remotes/log, official notice + guide sections, live product weight DOM, 9 gallery and 12 detail images inspected. PASS for document access and listed product observations; NOT VERIFIED for auth integration, packed weight/dimensions, live API behavior. Browser selector initially matched four hidden/visible response tabs; scoping to visible tab resolved it. Documentation diff check recorded after editing; build/tests not rerun for documentation-only changes (earlier results above are from prior checkpoint).
+- Dedicated Chrome and guide tab preserved; only temporary image contact sheet closed and CDP transport disconnected.
+- The later user instruction below supersedes the proposed cable-tray inquiry: prefer products with complete package data and MOQ 1 rather than manually chasing missing data. Quickstar auth clarification remains open.
+
+### P2013 market/margin follow-up — 2026-10-13
+
+- Branch `codex/purchase-agency-pipeline`, base HEAD `fcf9bcc`. Local research/documentation only; no new commit/push. Existing research edits preserved.
+- Files for this follow-up: new `docs/research/2026-10-13-p2013-market-margin.md`, updated `HANDOFF.md`. Main UI/source/dependencies/local candidate approvals unchanged.
+- Selected P2013 black, offer `816692570613`: CNY 16.5, MOQ 1, displayed stock 13, SKU packaging table 18.5×14×4.5cm / 446g. Explicit gross/net distinction only corroborated by secondary repost; no physical packed-weight verification. Only 54g headroom below 0.5kg. Destination China freight remains unknown.
+- Live substitutes: LAAON ITB-ST300 KRW 8,500 delivered (smaller/lighter, zero reviews); Leto LTS-R02 KRW 14,900 delivered (2 GS reviews); Morac Bold M1 KRW 15,900 + 3,000 delivery, membership free-delivery shown (745 reviews). Not confirmed same-OEM or fully equivalent configurations.
+- Demand evidence: Morac primary page shows 21 repeat buyers in last 3 months and October-dated reviews; GS Leto reviews dated Feb 11/Aug 20. Category demand signal, not P2013 monthly-sales proof.
+- Quickstar general sea-self public rates rechecked: 0.5kg KRW 5,400, 1kg 6,200; displayed FX 211 KRW/CNY. VAT/extra fees unresolved. Scenario assumptions and formula explicitly documented, not provider contracts.
+- Decision HOLD / detail not created / not published. At KRW 14,900 delivered, modeled contribution ranges +3,237 favorable / +1,317 conservative / -1,517 stress including 10% ads. Taxes/fixed costs/labor excluded; not net profit. Conservative provisional 3,000 KRW and 20% screen requires >=17,242 KRW, without proven advantage over fast domestic substitutes.
+- Verification: read-only live product/market/tariff observations and JS arithmetic; initial review-date script syntax error fixed and rerun successfully. No API transaction/order/customer-data transfer. Documentation diff check run; npm/build/tests not rerun for document-only work.
+- Exact next action: keep P2013 on hold; use complete per-SKU package/gross-weight/MOQ-1 evidence and conservative delivered-cost comparison to shortlist candidates with more price headroom. Reconsider P2013 only with reliable low all-in logistics cost or evidenced differentiation, stable supply, and image rights. These are research rules, not newly implemented application filters.
 
 ## Historical handoff (superseded by checkpoint above)
 
