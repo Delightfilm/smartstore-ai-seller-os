@@ -1,5 +1,15 @@
 # HANDOFF.md
 
+## Execution checkpoint — foundation Task 1 partial — 2026-10-13
+
+- User approved execution plan. Proceeding with recommended Native execution, no further planning approval requested. Branch `codex/purchase-agency-pipeline`, base `15aff29`; existing user-designated checkout reused rather than creating an unrequested worktree.
+- New `src/data/workflowConfig.js` and `test/workflowConfig.test.js`; `.env.example` documents future explicit local/cloud configuration. Resolver rejects production/local mode, incomplete cloud config, VITE secret/service-role fields, non-publishable keys and arbitrary credential-bearing endpoint URLs. Errors do not echo values. **Not yet wired into Vite/UI/API; not a deployed security control or working cloud connection.** No SDK/dependency or main UI change.
+- TDD: initial ERR_MODULE_NOT_FOUND; empty resolver then produced 4/4 expected assertion failures; implementation passed 4/4. Baseline `npm test` 40/40; final `npm test` **44/44 PASS**, `npm run build` **PASS** (1,801 modules), `git diff --check` PASS. npm ci not repeated for dependency-unchanged partial substep; earlier install result remains historical.
+- Concrete blocker: official new-organization page redirects to Supabase sign-in. Asked user to log in via the visible in-app Supabase tab. No new organization/project, SDK installation, database migration, user account, cost or external transaction created. Existing DF-AUTOSYNC untouched. Task 1 and stages 1–5 remain incomplete.
+- Execution helper issue: Bash helper initially lacked dirname/basename in PATH, then failed mkdir with Permission denied at C:/Users/Delight and looped. Own MSYS process 7715 terminated; task scratch ledger created safely with apply_patch under ignored `.superpowers/sdd/2026-10-13-seller-os-foundation/`. No other process/browser stopped.
+- Rulings: use designated task checkout (tradeoff: no additional worktree isolation); manually maintain plan-scoped scratch ledger after helper failure (tradeoff: manual tracking); implement independently testable config substep while login pending (tradeoff: not integrated yet). Final independent whole-branch review remains pending until implementation tasks finish; no claim of completed review.
+- Next exact action: user completes Supabase login, then inspect new organization form, create only the approved new Seller OS organization if Free/no new terms or permission approval required; confirm actual project cost and create a dedicated free project. Stop for any cost, binding terms or expanded access. Continue Foundation Task 1 SDK/config integration, then Tasks 2–4 and plans 2–5. No repeated plan approval needed. No main merge/deployment, no real listing/fulfillment.
+
 ## Planning checkpoint — dedicated operating foundation — 2026-10-13
 
 - User authorized stages 1–5 (operating data, research automation, economics, evidence review, detail preparation), explicitly excluding actual listing/fulfillment. User then required a **new Supabase organization**, not DF-AUTOSYNC, with a dedicated Seller OS project; ask before any cost. Existing organization/project must remain untouched.
