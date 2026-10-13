@@ -50,7 +50,16 @@ export function createResearchWorker({call,collect=collect1688FromBrowser,search
       if(!enabled||epoch!==activeEpoch)return;
       for(let attempt=0;attempt<3;attempt++) {
         try{await request('workerComplete',{jobId:job.id,leaseId:job.lease_id,...payload});break;}
-        catch(e){if(attempt===2||e.status)throw e;}
+        catch(e){
+          if(e.status===400){
+            // An explicit rejected completion did not commit. Store a bounded failure
+            // using the same lease; unknown transport outcomes still replay unchanged.
+            const code=e.code==='RESULT_TOO_LARGE'?'RESULT_TOO_LARGE':'RESULT_REJECTED';
+            await request('workerFail',{jobId:job.id,leaseId:job.lease_id,code});
+            lastCode=code;failures++;if(failures>=3)await stop();return;
+          }
+          if(attempt===2||e.status)throw e;
+        }
       }
       lastCode=null;failures=0;
     }catch(e){lastCode=e.code||'WORKER_ERROR';failures++;if(e.status===401||e.status===403){enabled=false;epoch++;token=null;}else if(failures>=3)await stop().catch(()=>{});}

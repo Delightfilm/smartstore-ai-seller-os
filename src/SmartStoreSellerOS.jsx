@@ -8,6 +8,10 @@ import {
 } from "lucide-react";
 import CollectorPanel from "./CollectorPanel.jsx";
 import { useWorkflow } from './auth/AuthProvider.jsx';
+import { useResearch } from './dashboard/ResearchProvider.jsx';
+import { savedCandidateViews } from './dashboard/discoveryView.js';
+import SavedCandidateCards from './dashboard/SavedCandidateCards.jsx';
+import DiscoveryProgress from './dashboard/DiscoveryProgress.jsx';
 
 /* ============================================================================
    DESIGN TOKENS
@@ -906,19 +910,22 @@ const CATEGORIES = ["전체", "스포츠/레저", "생활/건강", "가구/인�
 function Discovery() {
   const { state, dispatch } = useApp();
   const workflow=useWorkflow(),cloud=workflow.config.mode==='cloud';
+  const research=useResearch();
+  const [inspection,setInspection]=useState(null);
   const nav = (name, params) => dispatch({ type: "NAV", name, params });
 
-  const [q, setQ] = useState("");
+  const [q, setQ] = useState(cloud?'平板支架':"");
   const [kw, setKw] = useState("전체");
   const [cat, setCat] = useState("전체");
   const [grades, setGrades] = useState(["S", "A", "B", "C"]);
   const [minConf, setMinConf] = useState(0);
   const [hideRisk, setHideRisk] = useState(false);
   const [running, setRunning] = useState(false);
-  const [sort, setSort] = useState("score");
+  const [sort, setSort] = useState(cloud?'latest':"score");
+  const cloudViews=useMemo(()=>savedCandidateViews(workflow.records,{status:kw,sort}),[workflow.records,kw,sort]);
 
   const runDiscovery = () => {
-    if(cloud)return;
+    if(cloud){void research.start(q);return;}
     setRunning(true);
     setTimeout(() => {
       setRunning(false);
@@ -957,32 +964,33 @@ function Discovery() {
           <h1 style={{ fontSize: 19, fontWeight: 650, letterSpacing: "-.02em", margin: 0 }}>발굴</h1>
           <div className="t3" style={{ fontSize: 12.5, marginTop: 3 }}>키워드로 소스 상품을 탐색하고 심사합니다</div>
         </div>
-        <Btn variant="primary" size="md" icon={running ? Loader2 : Search} onClick={runDiscovery} disabled={running||cloud}>
-          {cloud?'전체 발굴 미연동':running ? "발굴 중" : "발굴 실행"}
+        <Btn variant="primary" size="md" icon={(cloud?research.busy:running) ? Loader2 : Search} onClick={runDiscovery} disabled={cloud?research.busy||!research.ready||!q.trim():running}>
+          {cloud?(research.busy?'조사 예약 중':'발굴 실행'):running ? "발굴 중" : "발굴 실행"}
         </Btn>
       </div>
 
-      <CollectorPanel />
+      <CollectorPanel inspection={inspection}/>
 
       {/* 검색 · 카테고리 */}
       <div className="surf" style={{ padding: 16 }}>
         <div className="flex" style={{ gap: 10, flexWrap: "wrap", marginBottom: 14 }}>
           <div style={{ position: "relative", flex: "1 1 260px" }}>
             <Search size={14} style={{ position: "absolute", left: 10, top: 10, color: "var(--text-3)" }} />
-            <input className="inp" placeholder="상품명 또는 키워드 검색" value={q}
+            <input className="inp" aria-label={cloud?'1688 발굴 검색어':'상품명 또는 키워드 검색'} placeholder={cloud?'1688 발굴 검색어 (중국어 권장)':'상품명 또는 키워드 검색'} value={q} maxLength={cloud?100:undefined}
+              onKeyDown={e=>{if(cloud&&e.key==='Enter'&&!e.nativeEvent.isComposing&&!research.busy&&q.trim())runDiscovery();}}
               onChange={(e) => setQ(e.target.value)} style={{ paddingLeft: 30 }} />
           </div>
-          <select className="inp" value={kw} onChange={(e) => setKw(e.target.value)} style={{ width: 150 }}>
-            <option>전체</option>{KEYWORDS.map((k) => <option key={k}>{k}</option>)}
+          <select className="inp" aria-label={cloud?'저장 후보 검토 상태':'키워드 필터'} value={kw} onChange={(e) => setKw(e.target.value)} style={{ width: 150 }}>
+            <option>전체</option>{cloud?<><option value="HOLD">보류</option><option value="REVIEW_REQUIRED">재검토 필요</option></>:KEYWORDS.map((k) => <option key={k}>{k}</option>)}
           </select>
-          <select className="inp" value={cat} onChange={(e) => setCat(e.target.value)} style={{ width: 170 }}>
+          <select className="inp" disabled={cloud} aria-label="카테고리 필터" title={cloud?'카테고리 분류 미검증':undefined} value={cat} onChange={(e) => setCat(e.target.value)} style={{ width: 170 }}>
             {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
           </select>
-          <select className="inp" value={sort} onChange={(e) => setSort(e.target.value)} style={{ width: 140 }}>
-            <option value="score">점수 높은순</option>
+          <select className="inp" aria-label="후보 정렬" value={sort} onChange={(e) => setSort(e.target.value)} style={{ width: 140 }}>
+            {cloud?<><option value="latest">최근 저장순</option><option value="oldest">오래된 저장순</option><option value="name">상품명순</option></>:<><option value="score">점수 높은순</option>
             <option value="margin">마진율 높은순</option>
             <option value="profit">마진액 높은순</option>
-            <option value="demand">수요 많은순</option>
+            <option value="demand">수요 많은순</option></>}
           </select>
         </div>
 
@@ -992,7 +1000,7 @@ function Discovery() {
             <span className="t3" style={{ fontSize: 12 }}>등급</span>
             <div className="flex" style={{ gap: 4 }}>
               {["S", "A", "B", "C", "D"].map((g) => (
-                <button key={g} onClick={() => toggleGrade(g)} className="btn btn-sm num"
+                <button key={g} disabled={cloud} title={cloud?'추천 등급 미검증':undefined} onClick={() => toggleGrade(g)} className="btn btn-sm num"
                   style={{
                     minWidth: 28, padding: "0 7px", fontWeight: 700,
                     background: grades.includes(g) ? `color-mix(in srgb, var(${GRADE_VAR[g]}) 14%, transparent)` : "transparent",
@@ -1004,21 +1012,21 @@ function Discovery() {
           </div>
           <div className="flex items-center" style={{ gap: 8 }}>
             <span className="t3" style={{ fontSize: 12 }}>최소 신뢰도</span>
-            <input type="range" min="0" max="0.9" step="0.1" value={minConf}
+            <input type="range" disabled={cloud} aria-label="최소 신뢰도" min="0" max="0.9" step="0.1" value={minConf}
               onChange={(e) => setMinConf(parseFloat(e.target.value))} style={{ width: 90, accentColor: "var(--accent)" }} />
             <span className="num t2" style={{ fontSize: 12, width: 26 }}>{minConf.toFixed(1)}</span>
           </div>
           <label className="flex items-center" style={{ gap: 6, cursor: "pointer" }}>
-            <input type="checkbox" checked={hideRisk} onChange={(e) => setHideRisk(e.target.checked)}
+            <input type="checkbox" disabled={cloud} checked={hideRisk} onChange={(e) => setHideRisk(e.target.checked)}
               style={{ accentColor: "var(--accent)" }} />
             <span className="t2" style={{ fontSize: 12 }}>검토 필요 숨기기</span>
           </label>
-          <span className="t3 num" style={{ fontSize: 12, marginLeft: "auto" }}>{list.length}건</span>
+          <span className="t3 num" style={{ fontSize: 12, marginLeft: "auto" }}>{cloud?cloudViews.length:list.length}건{cloud?' · 저장 후보':''}</span>
         </div>
       </div>
 
       {/* 퍼널 */}
-      <div className="surf" style={{ padding: 16 }}>
+      {cloud?<DiscoveryProgress research={research}/>:<div className="surf" style={{ padding: 16 }}>
         <div className="flex items-center justify-between" style={{ marginBottom: 14 }}>
           <span className="eyebrow">{cloud?'전체 발굴 파이프라인 미연동 · 상품 조사는 위 자동화 패널':'발굴 잡 #331 — 캠핑의자 외 3'}</span>
           <span className="t3 num" style={{ fontSize: 11.5 }}>{cloud?'예산 미연동':'예산 31,200 / 50,000원'}</span>
@@ -1036,10 +1044,10 @@ function Discovery() {
             </div>
           ))}
         </div>
-      </div>
+      </div>}
 
       {/* 결과 */}
-      {running ? (
+      {cloud ? (!workflow.recordsLoaded ? <p role="status">저장 후보 조회 중…</p> : cloudViews.length ? <SavedCandidateCards views={cloudViews} onReview={id=>setInspection({id,nonce:Date.now()})}/> : <Empty icon={Search} title="표시할 저장 후보가 없습니다" body="위 검색어를 입력하고 발굴 실행을 누르세요. 모든 옵션의 MOQ 1·포장 총중량·크기 근거가 확인된 상품만 저장됩니다." action={<Btn onClick={()=>setKw('전체')}>검토 상태 필터 초기화</Btn>}/>) : running ? (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(320px,1fr))", gap: 14 }}>
           {[0, 1, 2].map((i) => <div key={i} className="surf skel" style={{ height: 250 }} />)}
         </div>

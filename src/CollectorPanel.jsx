@@ -4,13 +4,13 @@ import { collect1688Product, getCollectorAvailability } from "./collector1688.js
 import PurchaseAgencyPanel from './PurchaseAgencyPanel.jsx';
 import { useWorkflow } from './auth/AuthProvider.jsx';
 
-export default function CollectorPanel() {
+export default function CollectorPanel({inspection}) {
   const [url, setUrl] = useState("");
   const [status, setStatus] = useState("IDLE");
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
   const workflow=useWorkflow();
-  const availability = workflow?.config.mode==='cloud'?{available:false,mode:'RESEARCH_QUEUE',label:'아래 자동 조사 사용',description:'클라우드에서는 아래 조사 대기열을 사용합니다. 조건을 통과한 상품만 후보로 저장됩니다.'}:getCollectorAvailability();
+  const availability = workflow?.config.mode==='cloud'?{available:false,mode:'RESEARCH_QUEUE',label:'상단 발굴 실행 사용',description:'상단 발굴 실행과 아래 자동화 패널은 같은 조사 대기열을 사용합니다. 조건 통과 상품만 후보로 저장됩니다.'}:getCollectorAvailability();
 
   const run = async () => {
     setStatus("LOADING");
@@ -128,7 +128,7 @@ export default function CollectorPanel() {
           </div>
         </div>
       )}
-      <PurchaseAgencyPanel />
+      <PurchaseAgencyPanel inspection={inspection}/>
     </div>
   );
 }

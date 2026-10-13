@@ -43,7 +43,7 @@ export function researchOperation(input,{cardMoq=null}={}) {
     } else throw failure('INVALID_JOB_KIND');
   }
   if(action==='fail') {
-    const codes=['BROWSER_VERIFY_REQUIRED','HUMAN_REQUIRED','SIGN_IN_REQUIRED','BROWSER_NOT_READY','READ_FAILED','RESULT_TOO_LARGE'];
+    const codes=['BROWSER_VERIFY_REQUIRED','HUMAN_REQUIRED','SIGN_IN_REQUIRED','BROWSER_NOT_READY','READ_FAILED','RESULT_TOO_LARGE','RESULT_REJECTED'];
     data.result={code:codes.includes(input.code)?input.code:'READ_FAILED'};
   }
   return {action,data};
@@ -62,6 +62,9 @@ export function researchJobsService({writer,workspaceId,actorId}) {
     // A committed observation must replay its original verdict, even after freshness expires.
     // SQL still checks worker/lease and exact normalized completion identity.
     if(completed?.observation&&JSON.stringify(canonical(completed.observation))===JSON.stringify(canonical(data.result?.observation)))data.result=completed;
+    // PostgreSQL jsonb text adds separators; the indented encoding is a conservative
+    // upper bound for our bounded normalized values. Never truncate the full SKU set.
+    if(action==='complete'&&new TextEncoder().encode(JSON.stringify(data,null,1)).length>65536)throw failure('RESULT_TOO_LARGE',400);
     const {data:result,error}=await writer.rpc('seller_os_research_operation',{p_workspace:workspaceId,p_actor:actorId,p_action:action,p_input:data});
     if(error)throw failure(error.code==='40001'?'LEASE_OR_WORKER_CONFLICT':error.code==='42501'?'WORKER_FORBIDDEN':error.code==='22023'?'INVALID_JOB_OR_REPLAY':'RESEARCH_STORE_ERROR',error.code==='40001'?409:error.code==='42501'?403:error.code==='22023'?400:500);
     return result;

@@ -108,3 +108,20 @@ test('a committed refresh replays its original normalized verdict after evidence
  assert.equal(sent.result.status,'ELIGIBLE');
  assert.equal(checkSourcingEligibility(normalized).status,'HOLD');
 });
+test('normalized research size is checked before the bounded database RPC, without dropping SKUs',async()=>{
+ const observation=fixture(),first=observation.skus[0];
+ observation.skus=Array.from({length:32},(_,i)=>{const s=structuredClone(first);s.skuId=`vendor${i}`;s.label='公开商品选项'.repeat(12);for(const key of ['price','stock','grossWeight','dimensions'])s[key].scope.skuId=s.skuId;return s;});
+ assert.ok(Buffer.byteLength(JSON.stringify(observation))<60000);
+ const writer={from:()=>({select(){return this;},eq(){return this;},async maybeSingle(){return {data:{input:{url},completion_input:null}};}}),rpc:async()=>{throw new Error('RPC should not receive oversized normalized data');}};
+ const service=researchJobsService({writer,workspaceId:randomUUID(),actorId:randomUUID()});
+ await assert.rejects(()=>service({action:'workerComplete',...identity,kind:'refresh',observation}),e=>e.code==='RESULT_TOO_LARGE'&&e.status===400);
+});
+test('a definitive server completion rejection becomes a failed job rather than a silently running lease',async()=>{
+ let storedStatus='QUEUED',storedCode=null;
+ const worker=createResearchWorker({collect:async()=>({researchRaw:fixture()}),call:async input=>{
+  if(input.action==='workerClaim'){storedStatus='RUNNING';return {id:identity.jobId,lease_id:identity.leaseId,kind:'refresh',input:{url}};}
+  if(input.action==='workerComplete')throw Object.assign(new Error('oversized normalized result'),{code:'RESULT_TOO_LARGE',status:400});
+  if(input.action==='workerFail'){storedStatus='FAILED';storedCode=input.code;}
+ }});
+ await worker.connect('fixture-token');await worker.tick();assert.equal(storedStatus,'FAILED');assert.equal(storedCode,'RESULT_TOO_LARGE');
+});

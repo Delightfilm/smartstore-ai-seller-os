@@ -14,7 +14,7 @@ function download(name,data,type){
   const a=document.createElement('a');a.href=href;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(href),1000);
 }
 
-export default function PurchaseAgencyPanel(){
+export default function PurchaseAgencyPanel({inspection}){
   const workflow=useWorkflow();
   const cloud=workflow.config.mode==='cloud';
   const api=input=>workflow.client.request(input);
@@ -23,6 +23,7 @@ export default function PurchaseAgencyPanel(){
   const [busy,setBusy]=useState(true),[message,setMessage]=useState(cloud?'클라우드 후보를 불러옵니다.':'로컬에 저장됩니다.'),[dirty,setDirty]=useState(false),[reviewDirty,setReviewDirty]=useState(false);
   const [events,setEvents]=useState([]);
   const latestRows=useRef([]);
+  const panelElement=useRef(null),handledInspection=useRef(null);
   const publishRows=rows=>{const next=mergeCandidateSnapshots(latestRows.current,rows);latestRows.current=next;setRecords(next);workflow.setRecords(next);return next;};
   useEffect(()=>{
     if(!import.meta.env.DEV&&!cloud)return;
@@ -31,6 +32,14 @@ export default function PurchaseAgencyPanel(){
     return ()=>{active=false;};
   },[workflow.client,workflow.user?.id]);
   useEffect(()=>{if(!cloud||!candidate)return;let active=true;api({action:'events',id:candidate.id}).then(rows=>{if(active)setEvents(rows);}).catch(()=>{if(active)setEvents([]);});return()=>{active=false;};},[cloud,candidate?.id,candidate?.revision,workflow.client]);
+  useEffect(()=>{
+    if(!inspection||inspection===handledInspection.current)return;
+    const saved=records.find(c=>c.id===inspection.id);if(!saved)return;
+    handledInspection.current=inspection;
+    if(dirty){setMessage('저장하지 않은 검토 내용이 있습니다. 먼저 저장하거나 변경 취소 후 후보를 다시 선택하세요.');return;}
+    setCandidate(saved);setReviewDirty(false);
+    if(panelElement.current){panelElement.current.open=true;panelElement.current.scrollIntoView({block:'start'});}
+  },[inspection,records,dirty]);
   if(!import.meta.env.DEV&&!cloud)return null;
   const run=async fn=>{setBusy(true);setMessage('처리 중…');try{await fn();setMessage('작업 완료 · 실제 상품은 등록하지 않았습니다.');}catch(e){setMessage(e.name==='TimeoutError'?'요청 시간 초과. 후보를 다시 불러와 저장 여부를 확인하세요.':e.message);}finally{setBusy(false);}};
   const accept=c=>{const rows=publishRows([c]);setCandidate(rows.find(r=>r.id===c.id));setDirty(false);setReviewDirty(false);};
@@ -51,7 +60,7 @@ export default function PurchaseAgencyPanel(){
   const detail=candidate?renderDetail(candidate.product,{...candidate.listing,imageRightsConfirmed:candidate.terms.imageRightsConfirmed===true,selectedVariant:candidate.terms.selectedVariant}):null;
   const button=(label,fn,disabled=false)=><button type="button" className="btn btn-sm" disabled={busy||disabled} onClick={()=>run(fn)}>{label}</button>;
   const input=(label,value,onChange,type='text')=><label style={{display:'grid',gap:4,fontSize:12}}>{label}<input className="inp" type={type} min={type==='number'?0:undefined} step={type==='number'?'any':undefined} value={value ?? ''} onChange={e=>onChange(e.target.value)}/></label>;
-  return <details data-testid="purchase-agency-panel" style={{marginTop:16,borderTop:'1px solid var(--line)',paddingTop:12}}>
+  return <details ref={panelElement} data-testid="purchase-agency-panel" style={{marginTop:16,borderTop:'1px solid var(--line)',paddingTop:12}}>
     <summary style={{cursor:'pointer',fontWeight:600}}>해외구매대행 조사 · 검토 기록 ({cloud?'클라우드':'로컬 전용'}) · 저장 {records.length}건</summary>
     <p role="status" style={{fontSize:12,margin:'12px 0'}}>{message}</p>
     <fieldset disabled={busy} style={{border:0,padding:0,minWidth:0}}>

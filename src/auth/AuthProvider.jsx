@@ -5,6 +5,8 @@ import { createWorkflowClient } from '../data/workflowClient.js';
 import { summarizeCandidates } from '../dashboard/operatingSummary.js';
 import { emailVerificationInput } from './emailSignIn.js';
 import { createRecordUpdater } from '../data/recordUpdates.js';
+import { mergeCandidateSnapshots } from '../data/candidateSnapshots.js';
+import ResearchProvider from '../dashboard/ResearchProvider.jsx';
 const Context=createContext(null);
 export const useWorkflow=()=>useContext(Context);
 export function AuthProvider({children}){
@@ -15,13 +17,16 @@ export function AuthProvider({children}){
  const [status,setStatus]=useState(config?.mode==='local'?'local':'loading');
  const [user,setUser]=useState(null),[error,setError]=useState(setup.error||''),[records,setRecords]=useState([]);
  const [recordsLoaded,setRecordsLoaded]=useState(false);
- const recordUpdater=useRef(null);if(!recordUpdater.current)recordUpdater.current=createRecordUpdater(rows=>{setRecords(rows);setRecordsLoaded(true);});
+ const latestRecords=useRef([]);
+ const recordUpdater=useRef(null);if(!recordUpdater.current)recordUpdater.current=createRecordUpdater(rows=>{latestRecords.current=rows;setRecords(rows);setRecordsLoaded(true);});
  const publishRecords=recordUpdater.current.publish;
+ const publishResearchRecords=rows=>{const next=mergeCandidateSnapshots(latestRecords.current,rows);latestRecords.current=next;publishRecords(next);};
+ const publishUserRecords=rows=>publishRecords(mergeCandidateSnapshots(latestRecords.current,rows));
  const client=useMemo(()=>config?createWorkflowClient({config,workspaceId:import.meta.env.VITE_SELLER_OS_WORKSPACE_ID,getAccessToken:async()=>session.current?.access_token}):null,[config]);
  useEffect(()=>{
   if(!supabase)return;
   let active=true,revision=0;
-  const apply=s=>{const changed=session.current?.user?.id!==s?.user?.id;session.current=s;if(changed){client.invalidate();publishRecords([]);setRecordsLoaded(false);setError('');}setUser(s?.user||null);setStatus(s?'signedIn':'signedOut');};
+  const apply=s=>{const changed=session.current?.user?.id!==s?.user?.id;session.current=s;if(changed){client.invalidate();latestRecords.current=[];publishRecords([]);setRecordsLoaded(false);setError('');}setUser(s?.user||null);setStatus(s?'signedIn':'signedOut');};
   const {data}=supabase.auth.onAuthStateChange((event,s)=>{revision++;if(active)apply(s);});
   const atStart=revision;
   supabase.auth.getSession().then(({data,error})=>{if(active&&revision===atStart){if(error)setError('로그인 세션을 확인하지 못했습니다.');apply(data.session);}});
@@ -39,9 +44,9 @@ export function AuthProvider({children}){
  };
  const signOut=async()=>{
   await client.localWorker('stop').catch(()=>{});
-  session.current=null;client.invalidate();publishRecords([]);setRecordsLoaded(false);setUser(null);setStatus('signedOut');
+  session.current=null;client.invalidate();latestRecords.current=[];publishRecords([]);setRecordsLoaded(false);setUser(null);setStatus('signedOut');
   const {error}=await supabase.auth.signOut({scope:'local'});if(error)setError('로그아웃 후 세션 제거 상태를 확인하세요.');
  };
  if(setup.error)return <p role="alert" style={{padding:24}}>연결 설정 오류: {setup.error}</p>;
- return <Context.Provider value={{config,status,user,error,signIn,signOut,requestEmailSignIn,verifyEmailSignIn,client,records,recordsLoaded,setRecords:publishRecords,summary:summarizeCandidates(records)}}>{children}</Context.Provider>;
+ return <Context.Provider value={{config,status,user,error,signIn,signOut,requestEmailSignIn,verifyEmailSignIn,client,records,recordsLoaded,setRecords:publishUserRecords,summary:summarizeCandidates(records)}}><ResearchProvider client={client} enabled={status==='signedIn'&&config.mode==='cloud'} userId={user?.id} onCandidates={publishResearchRecords}>{children}</ResearchProvider></Context.Provider>;
 }
