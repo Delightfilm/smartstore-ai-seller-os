@@ -11,3 +11,4 @@ dist/
 .1688-browser-profile/
 *.log
 .seller-os/
+supabase/.temp/

@@ -9,7 +9,8 @@
 
 ## Global Constraints
 
-- 기존 DF-AUTOSYNC 조직/프로젝트에 쓰기 금지. 신규 조직 표시 이름 Seller OS, 프로젝트 seller-os, 지역은 생성 시 서울(ap-northeast-2) 가용 여부 확인.
+- 2026-10-13 사용자 변경 승인: 기존 DF-AUTOSYNC의 `dzgczkwwezzsfqnjdqen` 프로젝트 안에 Seller OS 전용 영역만 추가한다. `public.seller_os_*` 테이블 및 `seller_os_private` 스키마로 이름/권한을 분리한다. 다른 앱의 테이블·함수·Auth 설정·스토리지·과금은 변경하지 않는다. 새 Seller OS 조직은 빈 상태로 보존한다.
+- 아래 Task 1의 신규 프로젝트 생성 단계는 이 승인으로 대체된다. Task 2의 '신규 프로젝트'는 위 프로젝트의 신규 Seller OS 영역만을 뜻한다. 공용 Auth 사용자 중 사용자가 확인한 운영 계정만 Seller OS workspace에 연결하며, 다른 앱의 멤버를 자동으로 포함하지 않는다.
 - 비용 발생 사전 승인, 공개 회원가입/익명 운영 접근 금지, 비밀키/쿠키/프로필 Git 및 클라이언트 노출 금지.
 - SmartStoreSellerOS 메인 UI/레이아웃과 /sourcing-console 유지. mock 로그인으로 클라우드 기능 접근 금지.
 - P2013 HOLD 및 로컬 원본 유지. publication=NOT_PUBLISHED 고정. main 병합/배포/결제/실제 등록·배송 없음.
