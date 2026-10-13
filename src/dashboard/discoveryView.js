@@ -1,4 +1,5 @@
 import { reviewCandidate } from '../researchReview.js';
+import { candidateEstimate } from '../domain/discoveryEstimate.js';
 
 export function discoveryProgress(jobs=[]) {
  const roots=jobs.filter(j=>j.kind==='search'||!j.input?.parentJobId);
@@ -23,7 +24,7 @@ export function savedCandidateViews(records=[],{status='전체',sort='latest'}={
   return {id:candidate.id,title:candidate.product?.title||candidate.id,revision:candidate.revision,status:review.status,
    reasons:review.blockers,profitKrw:review.profitKrw??null,marginPercent:review.marginPercent??null,
    updatedAt:candidate.updatedAt||candidate.product?.collectedAt||null,moq:candidate.product?.minOrderQty??null,
-   variants:candidate.product?.variants?.length??0};
+   variants:candidate.product?.variants?.length??0,estimate:candidateEstimate(candidate)};
  }).filter(c=>status==='전체'||c.status===status);
  return views.sort((a,b)=>sort==='name'?a.title.localeCompare(b.title,'ko'):sort==='oldest'?String(a.updatedAt||'').localeCompare(String(b.updatedAt||'')):String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')));
 }

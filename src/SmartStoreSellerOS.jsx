@@ -11,6 +11,7 @@ import { useWorkflow } from './auth/AuthProvider.jsx';
 import { useResearch } from './dashboard/ResearchProvider.jsx';
 import { savedCandidateViews } from './dashboard/discoveryView.js';
 import SavedCandidateCards from './dashboard/SavedCandidateCards.jsx';
+import EstimateProfileFields from './dashboard/EstimateProfileFields.jsx';
 import DiscoveryProgress from './dashboard/DiscoveryProgress.jsx';
 
 /* ============================================================================
@@ -970,6 +971,7 @@ function Discovery() {
       </div>
 
       <CollectorPanel inspection={inspection}/>
+      {cloud&&<EstimateProfileFields profile={research.estimateProfile} onChange={research.setEstimateProfile} disabled={research.busy} error={research.message.includes('추정')||research.message.includes('빈값')?research.message:null}/>}
 
       {/* 검색 · 카테고리 */}
       <div className="surf" style={{ padding: 16 }}>
@@ -1047,7 +1049,7 @@ function Discovery() {
       </div>}
 
       {/* 결과 */}
-      {cloud ? (!workflow.recordsLoaded ? <p role="status">저장 후보 조회 중…</p> : cloudViews.length ? <SavedCandidateCards views={cloudViews} onReview={id=>setInspection({id,nonce:Date.now()})}/> : <Empty icon={Search} title="표시할 저장 후보가 없습니다" body="위 검색어를 입력하고 발굴 실행을 누르세요. 모든 옵션의 MOQ 1·포장 총중량·크기 근거가 확인된 상품만 저장됩니다." action={<Btn onClick={()=>setKw('전체')}>검토 상태 필터 초기화</Btn>}/>) : running ? (
+      {cloud ? (!workflow.recordsLoaded ? <p role="status">저장 후보 조회 중…</p> : cloudViews.length ? <SavedCandidateCards views={cloudViews} onReview={id=>setInspection({id,nonce:Date.now()})}/> : <Empty icon={Search} title="표시할 저장 후보가 없습니다" body="판매가·배송비 가정을 입력하고 발굴하세요. MOQ 1·공급가·재고와 기준 추정 마진이 유망하면 수익성 확정 보류 후보로 저장합니다." action={<Btn onClick={()=>setKw('전체')}>검토 상태 필터 초기화</Btn>}/>) : running ? (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(320px,1fr))", gap: 14 }}>
           {[0, 1, 2].map((i) => <div key={i} className="surf skel" style={{ height: 250 }} />)}
         </div>

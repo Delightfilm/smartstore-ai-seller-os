@@ -1,9 +1,11 @@
 import React,{createContext,useContext,useEffect,useRef,useState} from 'react';
 import { createDiscoveryController,initialDiscoveryState } from './discoveryController.js';
+import { estimateDefaults } from '../domain/discoveryEstimate.js';
 const Context=createContext(null);
 export const useResearch=()=>useContext(Context);
 export default function ResearchProvider({client,enabled,userId,onCandidates,children}) {
  const [state,setState]=useState(initialDiscoveryState),controller=useRef(null);
+ const [estimateProfile,setEstimateProfile]=useState(()=>({...estimateDefaults}));
  const callback=useRef(onCandidates);callback.current=onCandidates;
  useEffect(()=>{
   setState(initialDiscoveryState());if(!enabled)return;
@@ -13,5 +15,5 @@ export default function ResearchProvider({client,enabled,userId,onCandidates,chi
   return()=>{current.dispose();controller.current=null;clearInterval(timer);};
  },[client,enabled,userId]);
  const call=(method,...args)=>controller.current?.[method](...args)??Promise.resolve(false);
- return <Context.Provider value={{...state,ready:enabled,start:query=>call('start',query),enqueue:(kind,data)=>call('enqueue',kind,data),refresh:()=>call('poll'),connect:()=>call('connect'),stop:()=>call('stop'),retry:id=>call('retry',id)}}>{children}</Context.Provider>;
+ return <Context.Provider value={{...state,estimateProfile,setEstimateProfile,ready:enabled,start:query=>call('start',query,estimateProfile),enqueue:(kind,data)=>call('enqueue',kind,{...data,estimateProfile}),refresh:()=>call('poll'),connect:()=>call('connect'),stop:()=>call('stop'),retry:id=>call('retry',id)}}>{children}</Context.Provider>;
 }

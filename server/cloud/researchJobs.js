@@ -1,9 +1,11 @@
 import { supportedOfferUrl } from '../../src/domain/source1688.js';
 import { normalizeProduct, checkSourcingEligibility } from '../../src/domain/normalizedProduct.js';
 import { uuid, failure } from './errors.js';
+import { normalizeEstimateProfile, discoveryEstimate } from '../../src/domain/discoveryEstimate.js';
+import { evidenceMatches } from '../../src/domain/sourceEvidence.js';
 const canonical=value=>Array.isArray(value)?value.map(canonical):value&&typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(k=>[k,canonical(value[k])])):value;
 
-export function researchOperation(input,{cardMoq=null}={}) {
+export function researchOperation(input,{cardMoq=null,estimateProfile=null}={}) {
   const actions = {researchList:'list',researchEnqueue:'enqueue',researchRetry:'retry',workerConnect:'connect',workerHeartbeat:'heartbeat',workerClaim:'claim',workerStop:'stop',workerComplete:'complete',workerFail:'fail'};
   const action = actions[input.action];
   if (!action) throw failure('INVALID_RESEARCH_ACTION');
@@ -27,6 +29,7 @@ export function researchOperation(input,{cardMoq=null}={}) {
       if(typeof input.query!=='string'||!input.query.trim()||input.query.length>100)throw failure('QUERY_REQUIRED');
       data.query=input.query.trim();
     } else data.url=supportedOfferUrl(input.url).canonicalUrl;
+    if(input.estimateProfile!==undefined)data.estimateProfile=normalizeEstimateProfile(input.estimateProfile);
   }
   if (action==='complete') {
     if (input.kind==='search') {
@@ -38,8 +41,22 @@ export function researchOperation(input,{cardMoq=null}={}) {
       data.result={kind:'search',urls:Object.keys(cards),cardMoQs:cards,observedAt:input.observedAt,status:'SEARCHED'};
     } else if(input.kind==='refresh') {
       const observation=normalizeProduct({...input.observation,cardMoq});
-      const gate=checkSourcingEligibility(observation);
-      data.result={kind:'refresh',...gate,observation};
+      let gate=checkSourcingEligibility(observation),estimate=null;
+      if(estimateProfile){
+        for(const s of observation.skuObservations){
+          const context={offerId:observation.offerId,skuId:s.skuId,now:Date.parse(observation.observedAt)};
+          if(!evidenceMatches(s.evidence.grossWeight,context))s.package.grossWeightG=null;
+          if(!evidenceMatches(s.evidence.dimensions,context))s.package.dimensionsCm=null;
+        }
+        const trade=checkSourcingEligibility(observation,{requirePackaging:false});
+        if(observation.skuSetComplete!==true)trade.reasons.push('원문 판매 옵션 전체 목록 미확인');
+        if(observation.skuObservations.some(s=>s.priceCny>100000000))trade.reasons.push('추정 공급가 지원 범위 초과');
+        if(!trade.reasons.length){
+          estimate=discoveryEstimate(observation,estimateProfile);
+          gate={status:estimate.promising?'PROVISIONAL':'HOLD',reasons:estimate.promising?['수익성 확정 보류: 추정 가정이며 포장·운임·경쟁·수요 확인 필요']:['기준 배송비 시나리오의 추정 마진 목표 미달']};
+        }else gate={status:'HOLD',reasons:trade.reasons};
+      }
+      data.result={kind:'refresh',...gate,observation,...(estimate?{estimate}:{})};
     } else throw failure('INVALID_JOB_KIND');
   }
   if(action==='fail') {
@@ -51,14 +68,15 @@ export function researchOperation(input,{cardMoq=null}={}) {
 
 export function researchJobsService({writer,workspaceId,actorId}) {
   return async input=>{
-    let cardMoq=null,completed=null;
+    let cardMoq=null,completed=null,estimateProfile=null;
     if(input.action==='workerComplete'&&input.kind==='refresh'){
       const {data:job,error}=await writer.from('seller_os_research_jobs').select('input,completion_input').eq('workspace_id',workspaceId).eq('id',input.jobId).maybeSingle();
       if(error||!job)throw failure('JOB_REQUIRED');
       if(job.input.cardMoq!=null)cardMoq={value:job.input.cardMoq,unit:'piece',kind:'observed',confirmed:true,sourceUrl:job.input.url,observedAt:job.input.cardObservedAt,scope:{quantity:1,level:'offer',skuId:null}};
       completed=job.completion_input?.result;
+      estimateProfile=job.input.estimateProfile??null;
     }
-    const {action,data}=researchOperation(input,{cardMoq});
+    const {action,data}=researchOperation(input,{cardMoq,estimateProfile});
     // A committed observation must replay its original verdict, even after freshness expires.
     // SQL still checks worker/lease and exact normalized completion identity.
     if(completed?.observation&&JSON.stringify(canonical(completed.observation))===JSON.stringify(canonical(data.result?.observation)))data.result=completed;

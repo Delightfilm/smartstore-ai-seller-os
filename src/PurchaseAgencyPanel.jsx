@@ -3,6 +3,9 @@ import { useWorkflow } from './auth/AuthProvider.jsx';
 import { renderDetail, confirmationKeys, clearConfirmations, evidenceChanged } from './purchaseAgency.js';
 import { reviewCandidate, reviewLabels } from './researchReview.js';
 import ResearchReviewPanel from './ResearchReviewPanel.jsx';
+import DiscoveryEstimatePanel from './dashboard/DiscoveryEstimatePanel.jsx';
+import SourceEvidenceTable from './dashboard/SourceEvidenceTable.js';
+import { candidateEstimate } from './domain/discoveryEstimate.js';
 import ResearchJobsPanel from './ResearchJobsPanel.jsx';
 import { mergeCandidateSnapshots } from './data/candidateSnapshots.js';
 
@@ -79,8 +82,9 @@ export default function PurchaseAgencyPanel({inspection}){
       </>}
       {candidate&&<>
         <p>{candidate.product.title} · MOQ {candidate.product.minOrderQty ?? '미확인'} · {candidate.product.supplier?.name || '공급사 미확인'}</p>
-        {candidate.product.sourcingObservation&&<details open><summary>옵션별 단건 공급·포장 근거</summary><table style={{width:'100%',fontSize:12}}><thead><tr><th>원문 SKU / 옵션</th><th>가격·재고·MOQ</th><th>개당 포장 총중량</th><th>포장 가로×세로×높이</th><th>원문·확인 시간</th></tr></thead><tbody>{candidate.product.sourcingObservation.skuObservations.map(s=><tr key={s.skuId}><td>{s.skuId} · {s.label}</td><td>¥{s.priceCny} · {s.stock}개 · MOQ {s.moq}</td><td>{s.package.grossWeightG}g</td><td>{s.package.dimensionsCm?.join(' × ')}cm</td><td><a href={s.evidence.grossWeight.sourceUrl} target="_blank" rel="noreferrer">원문</a> · {new Date(s.evidence.grossWeight.observedAt).toLocaleString('ko-KR')}</td></tr>)}</tbody></table><p>포장 자료 선별 통과는 판매 승인이나 수익성 검토 통과가 아닙니다. 정보가 갱신되면 검토 확인 항목은 해제됩니다.</p></details>}
+        <SourceEvidenceTable observation={candidate.product.sourcingObservation}/>
         <ResearchReviewPanel candidate={candidate} storageLabel={cloud?'클라우드 저장':'로컬 영구 저장'} materialDirty={materialDirty} onPriceChange={v=>edit('research','salePriceKrw',v)} onReviewChange={(key,value)=>{setDirty(true);setReviewDirty(true);setCandidate(c=>({...c,review:{...c.review,[key]:value}}));}}/>
+        <DiscoveryEstimatePanel estimate={candidateEstimate(candidate)}/>
         {cloud&&<details><summary>저장 이력 ({events.length}건)</summary><ul>{events.map(e=><li key={e.id}>revision {e.revision} · {e.kind==='created'?'이전·생성':'수정'} · {new Date(e.created_at).toLocaleString('ko-KR')}</li>)}</ul></details>}
         {!candidate.research&&candidate.review&&<section aria-label="저장된 조사와 검토"><h4>검토 상태와 사유</h4><p>{reviewLabels[candidate.review.status]} · revision {candidate.revision}</p><label>검토 상태<select className="inp" aria-label="검토 상태" disabled={materialDirty} value={candidate.review.status} onChange={e=>{setDirty(true);setReviewDirty(true);setCandidate(c=>({...c,review:{...c.review,status:e.target.value}}));}}><option value="HOLD">보류</option><option value="REVIEW_REQUIRED">재검토 필요</option></select></label><label>보류·재검토 사유<textarea className="inp" aria-label="보류·재검토 사유" value={candidate.review.reasons.join('\n')} onChange={e=>{setDirty(true);setReviewDirty(true);setCandidate(c=>({...c,review:{...c.review,reasons:e.target.value.split('\n')}}));}}/></label><label>검토 메모<textarea className="inp" aria-label="검토 메모" value={candidate.review.note||''} onChange={e=>{setDirty(true);setReviewDirty(true);setCandidate(c=>({...c,review:{...c.review,note:e.target.value}}));}}/></label></section>}
         {candidate.review&&button(dirty?'검토 변경사항 저장':'검토 내용 저장',()=>save({review:true}))}

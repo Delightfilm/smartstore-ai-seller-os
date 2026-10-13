@@ -27,6 +27,7 @@ export function researchMargins(research = {}) {
 
 export function reviewCandidate(candidate) {
   const analysis=evaluateCandidate(candidate.product,candidate.market || {},candidate.terms);
+  if(candidate.product?.discoveryEstimate)analysis.blockers.unshift('수익성 확정 보류: 추정 시나리오이며 최종 운임·경쟁·수요 확인 필요');
   const review=candidate.review;
   if(!review)return analysis;
   const reasons=Array.isArray(review.reasons)?review.reasons:[];

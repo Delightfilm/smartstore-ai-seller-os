@@ -1,3 +1,4 @@
+import { normalizeEstimateProfile } from '../domain/discoveryEstimate.js';
 export const initialDiscoveryState=()=>({jobs:[],workerOnline:false,worker:null,busy:false,loading:true,fresh:false,message:'서버 조사 기록을 불러옵니다.'});
 
 // One authenticated foreground controller for both main discovery and the review panel.
@@ -36,11 +37,12 @@ export function createDiscoveryController({client,localAvailable,onState,onCandi
  };
  const enqueue=(kind,data)=>operate(async()=>{
   if(kind==='search'&&(typeof data.query!=='string'||!data.query.trim()||data.query.trim().length>100))throw new Error('발굴 검색어를 1~100자로 입력하세요.');
+  const captured={...data,...(data.estimateProfile?{estimateProfile:normalizeEstimateProfile(data.estimateProfile)}:{})};
   await ensureLocalWorker();if(!active)return;
-  await client.request({action:'researchEnqueue',kind,...data,...(kind==='search'?{query:data.query.trim()}:{})});
+  await client.request({action:'researchEnqueue',kind,...captured,...(kind==='search'?{query:data.query.trim()}:{})});
   publish({message:'조사 대기열에 저장했습니다. 조건 미충족 상품은 후보로 저장하지 않습니다.'});
  });
- return {poll,start:query=>enqueue('search',{query}),enqueue,
+ return {poll,start:(query,estimateProfile)=>enqueue('search',{query,...(estimateProfile?{estimateProfile}:{})}),enqueue,
   connect:()=>operate(async()=>{publish({worker:await client.localWorker('connect'),message:'로컬 조사 작업자를 연결했습니다.'});}),
   stop:()=>operate(async()=>{publish({worker:await client.localWorker('stop'),message:'로컬 조사 작업자를 중지했습니다.'});}),
   retry:jobId=>operate(async()=>{await ensureLocalWorker();if(!active)return;await client.request({action:'researchRetry',jobId});publish({message:'재시도를 예약했습니다. 로그인·보안 검증을 먼저 완료하세요.'});}),

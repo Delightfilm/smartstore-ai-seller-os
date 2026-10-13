@@ -3,7 +3,7 @@ import { validateCandidateUpdate } from '../candidateUpdate.js';
 import { renderDetail } from '../../src/purchaseAgency.js';
 import { reviewCandidate, researchMargins } from '../../src/researchReview.js';
 const shapes={list:['action','workspaceId'],events:['action','workspaceId','id'],export:['action','workspaceId','id'],update:['action','workspaceId','requestId','id','revision','terms','listing','comparisons','research','review'],search:['action','workspaceId','query'],collect:['action','workspaceId','url'],market:['action','workspaceId','id','revision','query']};
-const researchShapes={researchList:[],researchEnqueue:['requestId','kind','query','url'],researchRetry:['jobId'],workerConnect:['workerId'],workerHeartbeat:['workerId','leaseId'],workerClaim:['workerId'],workerStop:['workerId'],workerComplete:['workerId','jobId','leaseId','kind','urls','offers','observedAt','observation'],workerFail:['workerId','jobId','leaseId','code']};
+const researchShapes={researchList:[],researchEnqueue:['requestId','kind','query','url','estimateProfile'],researchRetry:['jobId'],workerConnect:['workerId'],workerHeartbeat:['workerId','leaseId'],workerClaim:['workerId'],workerStop:['workerId'],workerComplete:['workerId','jobId','leaseId','kind','urls','offers','observedAt','observation'],workerFail:['workerId','jobId','leaseId','code']};
 for(const [action,keys] of Object.entries(researchShapes))shapes[action]=['action','workspaceId',...keys];
 export function createAgencyHandler({allowedOrigins,authenticate,storeFor,researchFor}){
  if(!Array.isArray(allowedOrigins)||!allowedOrigins.length)throw failure('ORIGINS_REQUIRED');

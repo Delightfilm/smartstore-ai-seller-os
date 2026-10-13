@@ -21,7 +21,7 @@ export function normalizeProduct(raw={}) {
     images:Array.isArray(raw.images)?[...new Set(raw.images.filter(publicUrl))].slice(0,24):[],
     supplier:typeof raw.supplier==='string'?{name:raw.supplier.slice(0,200)}:null};
 }
-export function checkSourcingEligibility(observation,{now=Date.now()}={}) {
+export function checkSourcingEligibility(observation,{now=Date.now(),requirePackaging=true}={}) {
   const reasons=[];const add=message=>reasons.push(message);
   if(!observation.offerId||!observation.title)add('상품 식별자·상품명 미확인');
   if(!observation.skuObservations.length||observation.skuLimitExceeded)add('옵션 목록 미확인 또는 지원 개수 초과');
@@ -35,8 +35,8 @@ export function checkSourcingEligibility(observation,{now=Date.now()}={}) {
     if(observation.cardMoq&&(observation.cardMoq.unit!=='piece'||sourceNumber(observation.cardMoq.value)!==1||!evidenceMatches(observation.cardMoq,{...context,offerAllowed:true})))add(`${prefix}: 검색 카드·상세 MOQ 충돌 또는 오래된 카드 근거`);
     if(!(s.priceCny>0)||!evidenceMatches(s.evidence.price,context))add(`${prefix}: 옵션 가격 미확인`);
     if(!Number.isInteger(s.stock)||s.stock<1||!evidenceMatches(s.evidence.stock,context))add(`${prefix}: 옵션 재고 미확인/품절`);
-    if(!(s.package.grossWeightG>0)||!evidenceMatches(s.evidence.grossWeight,context))add(`${prefix}: 개당 포장 총중량·단위·근거 미완비`);
-    if(!s.package.dimensionsCm?.every(n=>n>0)||!evidenceMatches(s.evidence.dimensions,context))add(`${prefix}: 개당 포장 가로·세로·높이·근거 미완비`);
+    if(requirePackaging&&(!(s.package.grossWeightG>0)||!evidenceMatches(s.evidence.grossWeight,context)))add(`${prefix}: 개당 포장 총중량·단위·근거 미완비`);
+    if(requirePackaging&&(!s.package.dimensionsCm?.every(n=>n>0)||!evidenceMatches(s.evidence.dimensions,context)))add(`${prefix}: 개당 포장 가로·세로·높이·근거 미완비`);
   }
   return {status:reasons.length?'HOLD':'ELIGIBLE',reasons:[...new Set(reasons)].slice(0,100)};
 }
