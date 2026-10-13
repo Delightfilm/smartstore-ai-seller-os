@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { AlertTriangle, Check, ExternalLink, Loader2, Package, Plus } from "lucide-react";
 import { collect1688Product, getCollectorAvailability } from "./collector1688.js";
+import PurchaseAgencyPanel from './PurchaseAgencyPanel.jsx';
 
 export default function CollectorPanel() {
   const [url, setUrl] = useState("");
@@ -125,6 +126,7 @@ export default function CollectorPanel() {
           </div>
         </div>
       )}
+      <PurchaseAgencyPanel />
     </div>
   );
 }

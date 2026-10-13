@@ -1,5 +1,6 @@
 import { chromium } from "playwright-core";
 import { parse1688Html } from "./parse1688.js";
+import { read1688Dom } from "./browser1688.js";
 
 export { parse1688Html } from "./parse1688.js";
 
@@ -128,14 +129,17 @@ export async function collect1688FromBrowser({ url, offerId }) {
     const context = browser.contexts()[0];
     if (!context) throw new Error("1688 브라우저 컨텍스트를 찾지 못했습니다.");
     const page = await context.newPage();
+    let needsHuman = false;
     try {
       await page.goto(canonicalUrl, { waitUntil: "domcontentloaded", timeout: 45000 });
       await page.waitForTimeout(3500);
       const finalUrl = page.url();
       const titleText = await page.title().catch(() => "");
       const bodyText = await page.locator("body").innerText({ timeout: 5000 }).catch(() => "");
-      const blocked = /验证码|访问过于频繁|安全验证|滑动验证|punish|verify/i.test(`${titleText}\n${bodyText}`) || /sec\.1688\.com|punish/i.test(finalUrl);
+      const blocked = /验证码|访问过于频繁|安全验证|滑动验证|captcha|punish|verify/i.test(`${titleText}\n${bodyText}`) || /sec\.1688\.com|punish|login\.1688\.com|login\.taobao\.com/i.test(finalUrl);
       if (blocked) {
+        needsHuman = true;
+        await page.bringToFront();
         const error = new Error("1688 브라우저 세션에서도 보안 검증 화면이 열렸습니다. 전용 브라우저 창에서 검증을 완료한 뒤 다시 상품 가져오기를 누르세요.");
         error.code = "BROWSER_VERIFY_REQUIRED";
         throw error;
@@ -143,17 +147,23 @@ export async function collect1688FromBrowser({ url, offerId }) {
 
       const html = await page.content();
       const data = parse1688Html(html, offerId, canonicalUrl);
+      const dom = await read1688Dom(page);
+      for (const key of Object.keys(dom.provenance)) {
+        data[key] = dom[key];
+        data.provenance[key] = dom.provenance[key];
+      }
       return {
         ...data,
+        collectedAt: new Date().toISOString(),
         diagnostics: {
           mode: "BROWSER_CDP",
           htmlBytes: html.length,
-          finalUrl,
+          finalUrl: canonicalUrl,
           pageTitle: titleText,
         },
       };
     } finally {
-      await page.close().catch(() => {});
+      if (!needsHuman) await page.close().catch(() => {});
     }
   } finally {
     // browser.close() would terminate the dedicated Chrome process connected over CDP.

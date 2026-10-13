@@ -1,3 +1,5 @@
+import { numberOrNull } from './purchaseAgency.js';
+
 export function parse1688OfferUrl(input) {
   const raw = (input || "").trim();
   if (!raw) throw new Error("1688 상품 URL을 입력하세요.");
@@ -62,9 +64,8 @@ const MAX_IMAGES = 24;
 const MAX_VARIANTS = 36;
 
 function finiteNumber(value, { positive = false } = {}) {
-  if (value == null || value === "") return null;
-  const number = Number(value);
-  if (!Number.isFinite(number) || (positive ? number <= 0 : number < 0)) return null;
+  const number = numberOrNull(value);
+  if (number == null || (positive && number <= 0)) return null;
   return number;
 }
 
@@ -91,7 +92,9 @@ function normalizeVariants(value) {
     const name = typeof entry === "string" ? entry.trim() : typeof entry?.name === "string" ? entry.name.trim() : "";
     if (!name || seen.has(name)) continue;
     seen.add(name);
-    result.push({ id: result.length + 1, name });
+    const variant = { id: result.length + 1, name };
+    if (entry?.priceCny != null) variant.priceCny = finiteNumber(entry.priceCny);
+    result.push(variant);
     if (result.length >= MAX_VARIANTS) break;
   }
   return result;

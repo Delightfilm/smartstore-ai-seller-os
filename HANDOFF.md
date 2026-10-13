@@ -1,5 +1,49 @@
 # HANDOFF.md
 
+## Current checkpoint — 2026-10-13
+
+**Local overseas-purchase-agency preparation implemented; no product published.** User requested 1688 → domestic comparison → margin/demand → detail → registration, no owned inventory. Store review is incomplete, so actual Commerce OAuth/image upload/product POST is deferred. The older no-detail-work restriction below is superseded by the user's explicit request. Everything after “Historical handoff” is historical.
+
+- Branch: `codex/purchase-agency-pipeline`; base `768a963` (previous collector implementation `2f93697`). Implementation commit pending this checkpoint commit, to be recorded in the follow-up.
+- Main UI component `SmartStoreSellerOS.jsx` unchanged; `/sourcing-console` remains separate. No main merge or deployment.
+- Files: new `server/{agencyWorkflow,browser1688,browserSearch,naverMarket,workflowStore}.js`, `src/{purchaseAgency.js,PurchaseAgencyPanel.jsx}`, corresponding tests; updated collector server/client, CollectorPanel, Vite config and .gitignore; plan/spec/research/draft under `docs/`. No dependency/lockfile change remains.
+- Local workflow: scoped 1688 DOM/search, Naver API or browser comparison, explicit order economics, evidence gates, escaped HTML draft, revisioned `.seller-os/` store (Git-ignored), same-origin loopback JSON endpoint with 64 KB limit, collapsible development-only Discovery panel, PREPARATION_ONLY export. No publisher exists; reservation tests are storage foundations only.
+- Material edits invalidate previous confirmations and require a subsequent confirmation after saving. Carton quantities do not imply MOQ 1. Comma-separated currency is parsed in full; ambiguous tokens stay null.
+
+### Actual live result
+
+- User completed Naver and 1688 login plus renewed 1688 security verification. Commerce developer eligibility remains blocked while store review is pending. No security bypass or retry loop used.
+- Search returned 11 canonical offers. Saved offer `1089555932403`: title/supplier, 9 gallery images, 4 priced options. Fixed 40cm black/white ¥11.95; adjustable 43–74cm black/white ¥22.77. Supplier shown via browser translation: 이우 링천 생활용품 유한공사. Detail MOQ remains null, not inferred from the search card.
+- Candidate persisted in ignored `.seller-os/candidates.json`; survives server restart. Five Naver ad cards with price/shipping and reviews where available; none verified as same-configuration competitors. Current status REVIEW_REQUIRED, profit null, publication NOT_PUBLISHED. Text-only detail DRAFT_INCOMPLETE; rights unknown so no images used.
+- Shipping provider undecided. User authorized Quickstar/cheaper automated alternatives research, not signup/payment. Quickstar partner integrations, TossToss Open API, RootSmile REST documentation verified; cheapest all-in provider not established.
+- Research: `docs/research/2026-10-13-sourcing-and-forwarders.md`; text-only draft: `docs/research/offer-1089555932403-draft.html`.
+- Existing dashboard numbers/logs remain prototype mock data, not real orders/listings/profit.
+
+### Commands and tests
+
+- pwd/status/branch/remotes/log checked in `C:\Users\Delight\Documents\DelightFilm\smartstore-ai-seller-os`, never System32.
+- `npm run 1688:browser`: PASS after required human login/verification. CDP `/json/version` HTTP 200 after collection cleanup; dedicated browser preserved.
+- `npm ci`: PASS, 97 packages. Installer reported **15 vulnerabilities (1 moderate/14 high)**. Separate `npm audit --json` exit 1 reported **8 (2 moderate/6 high)**. Results differ; neither is a clean audit. No forced/major upgrade performed.
+- Final `npm test`: **34/34 PASS**. Final `npm run build`: PASS, Vite 8.2.1, 1,799 modules.
+- `npm run dev`: PASS at `http://127.0.0.1:5173/`, left running for inspection.
+- Actual Chrome: main login/dashboard/Discovery intact; one collector and one workflow; persisted candidate loads, correct draft iframe, independent sourcing-console, no pageerror. Material edit disables confirmations until save; unsaved changes block export. Save and JSON download PASS with PREPARATION_ONLY / REVIEW_REQUIRED / DRAFT_INCOMPLETE / NOT_PUBLISHED.
+- Actual API: cross-origin, malformed JSON and >64 KB requests rejected HTTP 400.
+- Test-first failures observed and fixed: missing new modules, Naver UI control/ambiguous money parsing, stale recollection, confirmation reuse, carton MOQ, partial comma-price parsing.
+- Browser follow-up initially timed out on exact textarea label (30s); explicit accessible label fixed it. Another test filled an identical value and wrongly expected dirty state; corrected test makes an actual edit then restores original text, and passes.
+- Independent read-only review: 3 Important findings fixed RED→GREEN; 34-test suite/build re-run. No second reviewer used. Live fidelity/rights/quotes and Commerce behavior were not independently assessed; source facts tested by parent, remaining operational facts still unknown.
+
+### Unresolved / Next task
+
+1. Review pushed branch; no main merge without authorization.
+2. Confirm Quickstar offers independent Seller OS developer API access, not only partner integrations. Compare matched VAT/parcel/inspection/packing/returns quotes with RootSmile and TossToss. No signup/payment/shipments/customer-data transfer without authorization.
+3. Confirm supplier single-unit MOQ, selected SKU package weight/dimensions, specs, image rights, 3 equivalent competitors and recent demand evidence; then complete costs and seller delivery/return policies. Do not call current candidate profitable or sale-ready.
+4. Once store approval/API eligibility is available, implement/test real Commerce OAuth/image upload/schema-valid registration and persistent duplicate/unknown-outcome controls; verify real returned product ID.
+5. Separate security upgrade review needed for dependency advisories. Prior preview-sync credential rotation remains owner issue #5.
+- Deferred minor: no in-panel stale-revision/timeout recovery while edits are dirty. Copy unsaved text before reloading browser and loading saved candidate, or unsaved edits are lost.
+- Local data/browser session preserved. No raw authenticated HTML, cookie, profile, secret or local store added to Git. Rollback source via revert on a new branch, preserving `.seller-os/`; no external listing/fulfillment rollback needed.
+
+## Historical handoff (superseded by checkpoint above)
+
 ## Current objective
 
 Validate and harden real 1688 product-data extraction before connecting collected products to Seller OS screening or automation.
