@@ -82,6 +82,7 @@
 - Browser follow-up initially timed out finding exact textarea label because label accessible text included its current contents. Added explicit aria-label matching visible labels; rerun required before final handoff.
 - Final browser rerun PASS: real edit/reset, confirmation-disabled-on-material-edit, save, JSON download and correct PREPARATION_ONLY/REVIEW_REQUIRED/DRAFT_INCOMPLETE/NOT_PUBLISHED states. An intermediate identical-fill test had no change event; the test was corrected, not product data. Cross-origin/malformed/oversized requests rejected; CDP remains alive.
 - npm ci PASS (97 packages), reported 15 vulnerabilities (1 moderate/14 high); separate npm audit --json returned exit 1 and 8 (2 moderate/6 high). Both are warning evidence, not a clean security report. No lockfile/dependency change remains; forced/major upgrades deferred to a dedicated review.
+- Preparation checkpoint committed as `1a82724`; HANDOFF updated with factual implementation/live outcomes. Initial sandbox git add failed with index.lock permission denied; approved elevated Git operation succeeded. Push task branch only; no merge, PR or deployment requested/performed.
 - Ruling: stale HANDOFF prohibition on detail/automation superseded by explicit user five-stage request, then narrowed by pending store review. Publication remains deferred; cost if wrong is needing API integration after approval, not unintended live listing.
 
 - Baseline: branch `768a963`; 17/17 tests pass. No Naver/Commerce/OpenAI credential environment configured.

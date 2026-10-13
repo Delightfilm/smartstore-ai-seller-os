@@ -4,7 +4,7 @@
 
 **Local overseas-purchase-agency preparation implemented; no product published.** User requested 1688 → domestic comparison → margin/demand → detail → registration, no owned inventory. Store review is incomplete, so actual Commerce OAuth/image upload/product POST is deferred. The older no-detail-work restriction below is superseded by the user's explicit request. Everything after “Historical handoff” is historical.
 
-- Branch: `codex/purchase-agency-pipeline`; base `768a963` (previous collector implementation `2f93697`). Implementation commit pending this checkpoint commit, to be recorded in the follow-up.
+- Branch: `codex/purchase-agency-pipeline`; base `768a963` (previous collector implementation `2f93697`). Implementation commit: `1a82724` (`Add local purchase-agency sourcing and preparation workflow`).
 - Main UI component `SmartStoreSellerOS.jsx` unchanged; `/sourcing-console` remains separate. No main merge or deployment.
 - Files: new `server/{agencyWorkflow,browser1688,browserSearch,naverMarket,workflowStore}.js`, `src/{purchaseAgency.js,PurchaseAgencyPanel.jsx}`, corresponding tests; updated collector server/client, CollectorPanel, Vite config and .gitignore; plan/spec/research/draft under `docs/`. No dependency/lockfile change remains.
 - Local workflow: scoped 1688 DOM/search, Naver API or browser comparison, explicit order economics, evidence gates, escaped HTML draft, revisioned `.seller-os/` store (Git-ignored), same-origin loopback JSON endpoint with 64 KB limit, collapsible development-only Discovery panel, PREPARATION_ONLY export. No publisher exists; reservation tests are storage foundations only.
