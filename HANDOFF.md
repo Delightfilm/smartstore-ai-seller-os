@@ -1,5 +1,14 @@
 # HANDOFF.md
 
+## Planning checkpoint — dedicated operating foundation — 2026-10-13
+
+- User authorized stages 1–5 (operating data, research automation, economics, evidence review, detail preparation), explicitly excluding actual listing/fulfillment. User then required a **new Supabase organization**, not DF-AUTOSYNC, with a dedicated Seller OS project; ask before any cost. Existing organization/project must remain untouched.
+- Branch `codex/purchase-agency-pipeline`, implementation HEAD before this documentation `e0bb8d8`; clean tree at planning start. New design: `docs/superpowers/specs/2026-10-13-seller-os-operating-foundation-design.md`.
+- Conversation approved the separate infrastructure direction. Written design is now awaiting user review; implementation plan and cloud creation have not begun. Supabase connector exposes project creation/cost checks but not organization creation; opened the official new-organization page for user access/login. No existing cloud data/settings changed.
+- Official billing docs checked: free-project entitlement is not reset by creating another organization. Actual new-organization cost/eligibility must be checked before creation. No paid plan, payment, project pause/delete/transfer or new project creation performed.
+- This checkpoint changes documentation only. Read-only status/branch/config/storage checks and design consistency/scope review performed; application tests/build not rerun (40-test/build result below belongs to prior implementation). No claim of cloud auth, backups or cross-device operation yet.
+- Next: review written foundation design; prepare/review implementation plan, confirm new organization identity and zero-cost eligibility, then implement/verify only there. Preserve P2013 HOLD, existing UI and local candidate file; no main merge/deployment without approval.
+
 ## Current checkpoint — dashboard research integration — 2026-10-13
 
 - Request: preserve the existing dashboard; persist/query research and connect review state, starting with P2013. **No shipment application, purchase/payment or product publication.**
