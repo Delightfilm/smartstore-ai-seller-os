@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useWorkflow } from './auth/AuthProvider.jsx';
 import { renderDetail, confirmationKeys, clearConfirmations, evidenceChanged } from './purchaseAgency.js';
 import { reviewCandidate, reviewLabels } from './researchReview.js';
 import ResearchReviewPanel from './ResearchReviewPanel.jsx';
@@ -6,30 +7,29 @@ import ResearchReviewPanel from './ResearchReviewPanel.jsx';
 const costFields={purchasePriceCny:'선택 옵션 매입가 (CNY)',fxKrwPerCny:'결제 적용환율 (원/CNY)',chinaShippingCny:'중국 내 배송비 (CNY)',internationalShippingKrw:'국제운송비 (원)',domesticShippingKrw:'별도 국내운송비 (원)',otherCostKrw:'검수·포장·기타 비용 (원)',returnReserveKrw:'반품 충당액 (원)',feePercent:'총 수수료 (%)',salePriceKrw:'상품 판매가 (원)',buyerShippingKrw:'구매자 배송비 (원)',minMarginPercent:'최소 목표마진 (%)'};
 const confirmations={supplierQuoteConfirmed:'단건 옵션 견적',costsConfirmed:'실제 배송·비용 견적',saleEligibilityConfirmed:'판매 가능 여부',imageRightsConfirmed:'이미지 사용권',comparisonConfirmed:'동일 구성 비교',demandConfirmed:'수요 근거 검토'};
 
-async function api(input){
-  const r=await fetch('/api/agency',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(input),signal:AbortSignal.timeout(60000)});
-  const data=await r.json();
-  if(!r.ok)throw new Error(data.message || '요청 실패');
-  return data;
-}
 function download(name,data,type){
   const href=URL.createObjectURL(new Blob([data],{type}));
   const a=document.createElement('a');a.href=href;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(href),1000);
 }
 
 export default function PurchaseAgencyPanel(){
+  const workflow=useWorkflow();
+  const cloud=workflow.config.mode==='cloud';
+  const api=input=>workflow.client.request(input);
   const [records,setRecords]=useState([]),[candidate,setCandidate]=useState(null),[offers,setOffers]=useState([]);
   const [query,setQuery]=useState(''),[url,setUrl]=useState(''),[marketQuery,setMarketQuery]=useState('');
-  const [busy,setBusy]=useState(import.meta.env.DEV),[message,setMessage]=useState('로컬에 저장됩니다. 실제 상품 등록은 아직 연결되지 않았습니다.'),[dirty,setDirty]=useState(false),[reviewDirty,setReviewDirty]=useState(false);
+  const [busy,setBusy]=useState(true),[message,setMessage]=useState(cloud?'클라우드 후보를 불러옵니다.':'로컬에 저장됩니다.'),[dirty,setDirty]=useState(false),[reviewDirty,setReviewDirty]=useState(false);
+  const [events,setEvents]=useState([]);
   useEffect(()=>{
-    if(!import.meta.env.DEV)return;
+    if(!import.meta.env.DEV&&!cloud)return;
     let active=true;
-    api({action:'list'}).then(rows=>{if(active){setRecords(rows);setCandidate(rows.find(c=>c.id==='816692570613') || rows[0] || null);}}).catch(e=>{if(active)setMessage(`저장 후보를 불러오지 못했습니다: ${e.message}`);}).finally(()=>{if(active)setBusy(false);});
+    api({action:'list'}).then(rows=>{if(active){setRecords(rows);workflow.setRecords(rows);setCandidate(rows.find(c=>c.id==='816692570613') || rows[0] || null);setMessage(cloud?'클라우드 저장 후보를 불러왔습니다.':'로컬 저장 후보를 불러왔습니다.');}}).catch(e=>{if(active)setMessage(`저장 후보를 불러오지 못했습니다: ${e.message}`);}).finally(()=>{if(active)setBusy(false);});
     return ()=>{active=false;};
-  },[]);
-  if(!import.meta.env.DEV)return null;
+  },[workflow.client,workflow.user?.id]);
+  useEffect(()=>{if(!cloud||!candidate)return;let active=true;api({action:'events',id:candidate.id}).then(rows=>{if(active)setEvents(rows);}).catch(()=>{if(active)setEvents([]);});return()=>{active=false;};},[cloud,candidate?.id,candidate?.revision,workflow.client]);
+  if(!import.meta.env.DEV&&!cloud)return null;
   const run=async fn=>{setBusy(true);setMessage('처리 중…');try{await fn();setMessage('작업 완료 · 실제 상품은 등록하지 않았습니다.');}catch(e){setMessage(e.name==='TimeoutError'?'요청 시간 초과. 후보를 다시 불러와 저장 여부를 확인하세요.':e.message);}finally{setBusy(false);}};
-  const accept=c=>{setCandidate(c);setDirty(false);setReviewDirty(false);setRecords(rs=>[...rs.filter(r=>r.id!==c.id),c]);};
+  const accept=c=>{setCandidate(c);setDirty(false);setReviewDirty(false);setRecords(rs=>[...rs.filter(r=>r.id!==c.id),c]);workflow.setRecords(rs=>[...rs.filter(r=>r.id!==c.id),c]);};
   const edit=(section,key,value)=>{setDirty(true);setCandidate(c=>{
     const next={...c,[section]:{...c[section],[key]:value}};
     if(!confirmationKeys.includes(key))next.terms=clearConfirmations(next.terms);
@@ -48,26 +48,28 @@ export default function PurchaseAgencyPanel(){
   const button=(label,fn,disabled=false)=><button type="button" className="btn btn-sm" disabled={busy||disabled} onClick={()=>run(fn)}>{label}</button>;
   const input=(label,value,onChange,type='text')=><label style={{display:'grid',gap:4,fontSize:12}}>{label}<input className="inp" type={type} min={type==='number'?0:undefined} step={type==='number'?'any':undefined} value={value ?? ''} onChange={e=>onChange(e.target.value)}/></label>;
   return <details data-testid="purchase-agency-panel" style={{marginTop:16,borderTop:'1px solid var(--line)',paddingTop:12}}>
-    <summary style={{cursor:'pointer',fontWeight:600}}>해외구매대행 조사 · 검토 기록 (로컬 전용) · 저장 {records.length}건</summary>
+    <summary style={{cursor:'pointer',fontWeight:600}}>해외구매대행 조사 · 검토 기록 ({cloud?'클라우드':'로컬 전용'}) · 저장 {records.length}건</summary>
     <p role="status" style={{fontSize:12,margin:'12px 0'}}>{message}</p>
     <fieldset disabled={busy} style={{border:0,padding:0,minWidth:0}}>
       <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-        {button(dirty?'변경 취소·다시 불러오기':'저장 후보 불러오기',async()=>{if(dirty&&!window.confirm('저장하지 않은 변경사항을 버리고 저장된 후보를 불러올까요?'))return;const rows=await api({action:'list'});setRecords(rows);setCandidate(rows.find(c=>c.id===candidate?.id)||rows.find(c=>c.id==='816692570613')||rows[0]||null);setDirty(false);setReviewDirty(false);})}
+        {button(dirty?'변경 취소·다시 불러오기':'저장 후보 불러오기',async()=>{if(dirty&&!window.confirm('저장하지 않은 변경사항을 버리고 저장된 후보를 불러올까요?'))return;const rows=await api({action:'list'});setRecords(rows);workflow.setRecords(rows);setCandidate(rows.find(c=>c.id===candidate?.id)||rows.find(c=>c.id==='816692570613')||rows[0]||null);setDirty(false);setReviewDirty(false);})}
         <select className="inp" aria-label="저장 후보" disabled={dirty} value={candidate?.id || ''} onChange={e=>{const c=records.find(r=>r.id===e.target.value);if(c)accept(c);}}>
           <option value="">후보 선택</option>{records.map(c=><option key={c.id} value={c.id}>[{reviewLabels[reviewCandidate(c).status] || '조사 중'}] {c.product.title || c.id}</option>)}
         </select>
       </div>
       <h3>1. 1688 탐색</h3>
-      {input('중국어 검색어',query,setQuery)}{button('1688 검색',async()=>setOffers((await api({action:'search',query})).offers))}
+      {cloud&&<p className="t3">상품 수집기 연결 대기 · 저장된 조사와 검토 기록은 조회·편집할 수 있습니다.</p>}
+      {input('중국어 검색어',query,setQuery)}{button('1688 검색',async()=>setOffers((await api({action:'search',query})).offers),cloud)}
       <ul>{offers.map(o=><li key={o.url}><button type="button" onClick={()=>setUrl(o.url)}>{o.title || o.url}</button></li>)}</ul>
-      {input('1688 상품 URL',url,setUrl)}{button('후보 수집·저장',async()=>accept(await api({action:'collect',url})),dirty)}
+      {input('1688 상품 URL',url,setUrl)}{button('후보 수집·저장',async()=>accept(await api({action:'collect',url})),dirty||cloud)}
       {candidate&&<>
         <p>{candidate.product.title} · MOQ {candidate.product.minOrderQty ?? '미확인'} · {candidate.product.supplier?.name || '공급사 미확인'}</p>
-        <ResearchReviewPanel candidate={candidate} materialDirty={materialDirty} onPriceChange={v=>edit('research','salePriceKrw',v)} onReviewChange={(key,value)=>{setDirty(true);setReviewDirty(true);setCandidate(c=>({...c,review:{...c.review,[key]:value}}));}}/>
+        <ResearchReviewPanel candidate={candidate} storageLabel={cloud?'클라우드 저장':'로컬 영구 저장'} materialDirty={materialDirty} onPriceChange={v=>edit('research','salePriceKrw',v)} onReviewChange={(key,value)=>{setDirty(true);setReviewDirty(true);setCandidate(c=>({...c,review:{...c.review,[key]:value}}));}}/>
+        {cloud&&<details><summary>저장 이력 ({events.length}건)</summary><ul>{events.map(e=><li key={e.id}>revision {e.revision} · {e.kind==='created'?'이전·생성':'수정'} · {new Date(e.created_at).toLocaleString('ko-KR')}</li>)}</ul></details>}
         {candidate.research&&button(dirty?'검토 변경사항 저장':'검토 내용 저장',()=>save({review:true}))}
         {dirty&&<p role="status">저장하지 않은 변경사항이 있습니다. 아래 결과는 저장 전 미리보기입니다.</p>}
         <h3>2. 국내 비교</h3>
-        {input('국내 검색어',marketQuery,setMarketQuery)}{button('국내 경쟁 조사',async()=>accept(await api({action:'market',id:candidate.id,revision:candidate.revision,query:marketQuery})),dirty)}
+        {input('국내 검색어',marketQuery,setMarketQuery)}{button('국내 경쟁 조사',async()=>accept(await api({action:'market',id:candidate.id,revision:candidate.revision,query:marketQuery})),dirty||cloud)}
         <p style={{fontSize:12}}>표시가격 기준입니다. 광고·옵션·수량을 대조해야 하며 누적 리뷰는 최근 판매량이 아닙니다.</p>
         <div style={{overflowX:'auto'}}><table style={{width:'100%',fontSize:12}}><thead><tr><th>동일 구성</th><th>상품</th><th>가격</th><th>배송비</th><th>리뷰</th></tr></thead><tbody>
           {candidate.market?.competitors.map(c=><tr key={c.id}>

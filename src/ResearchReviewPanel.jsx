@@ -4,7 +4,7 @@ import { publicUrl } from './purchaseAgency.js';
 
 const money=n=>n==null?'미산정':`${n.toLocaleString('ko-KR',{maximumFractionDigits:0})}원`;
 
-export default function ResearchReviewPanel({candidate,onPriceChange,onReviewChange,materialDirty}) {
+export default function ResearchReviewPanel({candidate,onPriceChange,onReviewChange,materialDirty,storageLabel='로컬 영구 저장'}) {
   const research=candidate.research;
   if(!research)return null;
   const review=candidate.review || {status:'REVIEW_REQUIRED',reasons:[],note:''};
@@ -16,7 +16,7 @@ export default function ResearchReviewPanel({candidate,onPriceChange,onReviewCha
       <span className="badge" data-testid="research-review-status">{reviewLabels[status]}</span>
       <span className="t3">실제 상품 미등록 · 배송 미신청</span>
     </div>
-    <p>관찰일 {new Date(research.observedAt).toLocaleDateString('ko-KR')} · 로컬 영구 저장 · revision {candidate.revision}</p>
+    <p>관찰일 {new Date(research.observedAt).toLocaleDateString('ko-KR')} · {storageLabel} · revision {candidate.revision}</p>
     <p>선택 옵션: {research.selectedVariant} · 매입가 ¥{research.purchasePriceCny} · 최소주문 {candidate.product.minOrderQty ?? '미확인'}개 · 관찰 당시 재고 {research.stock}개</p>
     <p>포장표: {research.package.weightG}g / {research.package.dimensionsCm.join(' × ')}cm · {research.package.measured?'실측':'판매자 표시값 · 실측 미확인'}</p>
     <p className="t3">{research.package.note}</p>
@@ -32,10 +32,10 @@ export default function ResearchReviewPanel({candidate,onPriceChange,onReviewCha
       </select>
     </label>
     <label style={{display:'grid',gap:4,marginTop:8}}>보류·재검토 사유 (한 줄에 하나)
-      <textarea className="inp" style={{height:'auto',resize:'vertical'}} rows={4} maxLength={10000} value={review.reasons.join('\n')} onChange={e=>onReviewChange('reasons',e.target.value.split('\n'))}/>
+      <textarea className="inp" aria-label="보류·재검토 사유 (한 줄에 하나)" style={{height:'auto',resize:'vertical'}} rows={4} maxLength={10000} value={review.reasons.join('\n')} onChange={e=>onReviewChange('reasons',e.target.value.split('\n'))}/>
     </label>
     <label style={{display:'grid',gap:4,marginTop:8}}>검토 메모
-      <textarea className="inp" style={{height:'auto',resize:'vertical'}} rows={2} maxLength={2000} value={review.note} onChange={e=>onReviewChange('note',e.target.value)}/>
+      <textarea className="inp" aria-label="검토 메모" style={{height:'auto',resize:'vertical'}} rows={2} maxLength={2000} value={review.note} onChange={e=>onReviewChange('note',e.target.value)}/>
     </label>
     <p className="t3">상태만 바꿔 검토 통과로 만들 수 없습니다. 실거래·게시 기능은 연결하지 않았습니다.</p>
 

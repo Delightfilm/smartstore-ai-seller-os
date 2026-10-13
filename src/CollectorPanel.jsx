@@ -2,13 +2,15 @@ import React, { useState } from "react";
 import { AlertTriangle, Check, ExternalLink, Loader2, Package, Plus } from "lucide-react";
 import { collect1688Product, getCollectorAvailability } from "./collector1688.js";
 import PurchaseAgencyPanel from './PurchaseAgencyPanel.jsx';
+import { useWorkflow } from './auth/AuthProvider.jsx';
 
 export default function CollectorPanel() {
   const [url, setUrl] = useState("");
   const [status, setStatus] = useState("IDLE");
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
-  const availability = getCollectorAvailability();
+  const workflow=useWorkflow();
+  const availability = workflow?.config.mode==='cloud'?{available:false,mode:'COLLECTOR_UNAVAILABLE',label:'수집기 연결 대기',description:'저장된 후보는 아래 조사 기록에서 조회·편집합니다.'}:getCollectorAvailability();
 
   const run = async () => {
     setStatus("LOADING");

@@ -7,6 +7,7 @@ import {
   CircleDot, ShieldCheck, ShieldAlert, Boxes, Loader2, PanelLeftClose, PanelLeft,
 } from "lucide-react";
 import CollectorPanel from "./CollectorPanel.jsx";
+import { useWorkflow } from './auth/AuthProvider.jsx';
 
 /* ============================================================================
    DESIGN TOKENS
@@ -417,6 +418,7 @@ const initialState = {
 let toastSeq = 0;
 
 function reducer(state, action) {
+  if(state.cloudMode&&!['LOGIN','LOGOUT','THEME','SIDEBAR','NAV','TOAST','UNTOAST'].includes(action.type))return state;
   switch (action.type) {
     case "LOGIN": return { ...state, authed: true, route: { name: "dashboard", params: {} } };
     case "LOGOUT": return { ...state, authed: false };
@@ -696,13 +698,18 @@ function Toasts() {
 ============================================================================ */
 function Login() {
   const { dispatch } = useApp();
-  const [email, setEmail] = useState("operator@delightfilm.kr");
-  const [pw, setPw] = useState("••••••••••");
+  const workflow=useWorkflow();
+  const cloud=workflow.config.mode==='cloud';
+  const [email, setEmail] = useState(cloud?'':"operator@delightfilm.kr");
+  const [pw, setPw] = useState(cloud?'':"••••••••••");
   const [busy, setBusy] = useState(false);
+  const [error,setError]=useState('');
+  const [emailMode,setEmailMode]=useState(cloud),[mailSent,setMailSent]=useState(false),[credential,setCredential]=useState('');
 
-  const submit = () => {
+  const submit = async () => {
     setBusy(true);
-    setTimeout(() => dispatch({ type: "LOGIN" }), 450);
+    if(!cloud){setTimeout(()=>dispatch({type:'LOGIN'}),450);return;}
+    setError('');try{if(emailMode){if(!mailSent){await workflow.requestEmailSignIn(email);setMailSent(true);}else await workflow.verifyEmailSignIn(email,credential);}else await workflow.signIn(email,pw);}catch(error){setError(error.message);}finally{setBusy(false);}
   };
 
   return (
@@ -723,22 +730,24 @@ function Login() {
           <div className="t3" style={{ fontSize: 12.5, marginBottom: 18 }}>운영자 계정으로 접속합니다.</div>
 
           <label className="eyebrow" style={{ display: "block", marginBottom: 6 }}>이메일</label>
-          <input className="inp" value={email} onChange={(e) => setEmail(e.target.value)}
+          <input className="inp" aria-label="이메일" autoComplete="username" disabled={mailSent&&emailMode} value={email} onChange={(e) => setEmail(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && submit()} style={{ marginBottom: 14 }} />
 
-          <label className="eyebrow" style={{ display: "block", marginBottom: 6 }}>비밀번호</label>
-          <input className="inp" type="password" value={pw} onChange={(e) => setPw(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && submit()} style={{ marginBottom: 18 }} />
+          {(!cloud||!emailMode)&&<><label className="eyebrow" style={{ display: "block", marginBottom: 6 }}>비밀번호</label>
+          <input className="inp" aria-label="비밀번호" autoComplete="current-password" type="password" value={pw} onChange={(e) => setPw(e.target.value)} onKeyDown={(e)=>e.key==='Enter'&&submit()} style={{marginBottom:18}}/></>}
+          {cloud&&emailMode&&mailSent&&<><label className="eyebrow" style={{display:'block',marginBottom:6}}>메일 인증번호 또는 로그인 링크</label><input className="inp" aria-label="메일 인증번호 또는 로그인 링크" type="password" autoComplete="one-time-code" value={credential} onChange={e=>setCredential(e.target.value)} onKeyDown={e=>e.key==='Enter'&&submit()} style={{marginBottom:12}}/><p className="t3" style={{fontSize:12}}>받은 메일에 번호가 있으면 입력하세요. 링크만 있다면 ‘로그인 링크 주소’를 복사해 이 칸에 붙여넣으세요. 채팅에는 보내지 마세요.</p></>}
 
           <Btn variant="primary" size="md" onClick={submit} disabled={busy}
             style={{ width: "100%" }} icon={busy ? Loader2 : undefined}>
-            {busy ? "접속 중" : "로그인"}
+            {busy?'처리 중':cloud&&emailMode?(mailSent?'인증하고 로그인':'인증메일 받기'):'로그인'}
           </Btn>
+          {error&&<p role="alert" style={{fontSize:12,marginTop:12}}>{error}</p>}
+          {cloud&&<button className="btn btn-sm" disabled={busy} style={{marginTop:12}} onClick={()=>{setEmailMode(!emailMode);setMailSent(false);setCredential('');setError('');}}>{emailMode?'비밀번호로 로그인':'이메일로 로그인'}</button>}
         </div>
 
         <div className="flex items-center justify-center" style={{ gap: 6, marginTop: 14 }}>
           <Lock size={11} style={{ color: "var(--text-3)" }} />
-          <span className="t3" style={{ fontSize: 11.5 }}>Prototype · Mock 데이터로 동작합니다</span>
+          <span className="t3" style={{ fontSize: 11.5 }}>{cloud?'Supabase 운영 계정 · 클라우드 저장':'Prototype · Mock 데이터로 동작합니다'}</span>
         </div>
       </div>
     </div>
@@ -750,6 +759,7 @@ function Login() {
 ============================================================================ */
 function Dashboard() {
   const { state, dispatch } = useApp();
+  const workflow=useWorkflow(),cloud=workflow.config.mode==='cloud';
   const nav = (name, params) => dispatch({ type: "NAV", name, params });
 
   const recommended = state.products.filter((p) => p.status === "RECOMMENDED");
@@ -767,14 +777,14 @@ function Dashboard() {
     <div className="fade" style={{ display: "flex", flexDirection: "column", gap: 18 }}>
       <div>
         <h1 style={{ fontSize: 19, fontWeight: 650, letterSpacing: "-.02em", margin: 0 }}>대시보드</h1>
-        <div className="t3" style={{ fontSize: 12.5, marginTop: 3 }}>2026년 7월 30일 목요일 · 오늘의 운영 현황</div>
+        <div className="t3" style={{ fontSize: 12.5, marginTop: 3 }}>{cloud?`${new Date().toLocaleDateString('ko-KR')} · 클라우드 조사 기록 · 주문·매출 미연동`:'2026년 7월 30일 목요일 · 오늘의 운영 현황'}</div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", gap: 12 }}>
-        <Stat label="오늘 추천" value={recommended.length} sub={`승인 대기 ${pending.length}건`} icon={Sparkles} />
-        <Stat label="오늘 등록" value={published.length} sub="+3 어제 대비" tone="pos" icon={Store} />
-        <Stat label="오늘 주문" value={todayOrders.length} sub={`발주 실패 1건`} tone="neg" icon={ShoppingCart} />
-        <Stat label="오늘 순이익" value={KRW(profit)} sub={`매출 ${KRW(revenue)}`} icon={Wallet} />
+        <Stat label={cloud?'저장 후보':'오늘 추천'} value={cloud?(workflow.recordsLoaded?workflow.summary.candidateCount:'—'):recommended.length} sub={cloud?(workflow.recordsLoaded?`재검토 필요 ${workflow.summary.reviewRequiredCount}건`:'불러오는 중'):`승인 대기 ${pending.length}건`} icon={Sparkles} />
+        <Stat label={cloud?'보류 후보':'오늘 등록'} value={cloud?(workflow.recordsLoaded?workflow.summary.holdCount:'—'):published.length} sub={cloud?(workflow.recordsLoaded?'근거 확인 대기':'불러오는 중'):'+3 어제 대비'} tone="pos" icon={Store} />
+        <Stat label="오늘 주문" value={cloud?'—':todayOrders.length} sub={cloud?'미연동':'발주 실패 1건'} tone="neg" icon={ShoppingCart} />
+        <Stat label="오늘 순이익" value={cloud?'—':KRW(profit)} sub={cloud?'매출 미연동':`매출 ${KRW(revenue)}`} icon={Wallet} />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1.55fr) minmax(0,1fr)", gap: 18, alignItems: "start" }}
@@ -819,21 +829,19 @@ function Dashboard() {
           <div className="surf" style={{ padding: 16 }}>
             <div className="flex items-center justify-between" style={{ marginBottom: 12 }}>
               <span className="eyebrow">오늘 비용</span>
-              <span className="num t3" style={{ fontSize: 11.5 }}>
-                {Math.round((spendTotal / state.settings.dailyBudget) * 100)}% 소진
-              </span>
+              <span className="num t3" style={{ fontSize: 11.5 }}>{cloud?'미연동':`${Math.round((spendTotal/state.settings.dailyBudget)*100)}% 소진`}</span>
             </div>
             {[["AI 분석", state.spend.ai], ["이미지 생성", state.spend.image], ["수집", state.spend.scrape]].map(([k, v]) => (
               <div key={k} className="flex items-center justify-between" style={{ marginBottom: 7 }}>
                 <span className="t2" style={{ fontSize: 12.5 }}>{k}</span>
-                <span className="num" style={{ fontSize: 12.5 }}>{KRW(v)}</span>
+                <span className="num" style={{ fontSize: 12.5 }}>{cloud?'—':KRW(v)}</span>
               </div>
             ))}
             <div style={{ height: 1, background: "var(--line)", margin: "10px 0" }} />
             <div className="flex items-center justify-between" style={{ marginBottom: 8 }}>
               <span style={{ fontSize: 12.5, fontWeight: 600 }}>합계</span>
               <span className="num" style={{ fontSize: 13, fontWeight: 600 }}>
-                {KRW(spendTotal)} <span className="t3" style={{ fontWeight: 400 }}>/ {KRW(state.settings.dailyBudget)}</span>
+                {cloud?'—':KRW(spendTotal)} <span className="t3" style={{ fontWeight: 400 }}>{cloud?'미연동':`/ ${KRW(state.settings.dailyBudget)}`}</span>
               </span>
             </div>
             <div className="bar-track">
@@ -845,10 +853,10 @@ function Dashboard() {
           <div className="surf" style={{ overflow: "hidden" }}>
             <div className="flex items-center justify-between" style={{ padding: "12px 16px", borderBottom: "1px solid var(--line)" }}>
               <span className="eyebrow">오류 로그</span>
-              <Chip tone="neg">{MOCK_ERRORS.filter(e => e.level === "CRITICAL").length} 심각</Chip>
+              <Chip tone="neg">{cloud?'미연동':`${MOCK_ERRORS.filter(e=>e.level==='CRITICAL').length} 심각`}</Chip>
             </div>
             <div style={{ maxHeight: 210, overflowY: "auto" }}>
-              {MOCK_ERRORS.map((e) => (
+              {(cloud?[]:MOCK_ERRORS).map((e) => (
                 <div key={e.id} style={{ padding: "10px 16px", borderBottom: "1px solid var(--line)" }}>
                   <div className="flex items-center" style={{ gap: 7, marginBottom: 3 }}>
                     <span style={{
@@ -872,7 +880,7 @@ function Dashboard() {
           <span className="eyebrow">최근 활동</span>
         </div>
         <div style={{ padding: "4px 0" }}>
-          {MOCK_ACTIVITY.map((a, i) => (
+          {(cloud?[]:MOCK_ACTIVITY).map((a, i) => (
             <div key={i} className="flex items-center" style={{ gap: 12, padding: "8px 16px" }}>
               <span className="mono t3" style={{ fontSize: 11, width: 36, flexShrink: 0 }}>{a.t}</span>
               <span style={{
@@ -897,6 +905,7 @@ const CATEGORIES = ["전체", "스포츠/레저", "생활/건강", "가구/인�
 
 function Discovery() {
   const { state, dispatch } = useApp();
+  const workflow=useWorkflow(),cloud=workflow.config.mode==='cloud';
   const nav = (name, params) => dispatch({ type: "NAV", name, params });
 
   const [q, setQ] = useState("");
@@ -909,6 +918,7 @@ function Discovery() {
   const [sort, setSort] = useState("score");
 
   const runDiscovery = () => {
+    if(cloud)return;
     setRunning(true);
     setTimeout(() => {
       setRunning(false);
@@ -947,8 +957,8 @@ function Discovery() {
           <h1 style={{ fontSize: 19, fontWeight: 650, letterSpacing: "-.02em", margin: 0 }}>발굴</h1>
           <div className="t3" style={{ fontSize: 12.5, marginTop: 3 }}>키워드로 소스 상품을 탐색하고 심사합니다</div>
         </div>
-        <Btn variant="primary" size="md" icon={running ? Loader2 : Search} onClick={runDiscovery} disabled={running}>
-          {running ? "발굴 중" : "발굴 실행"}
+        <Btn variant="primary" size="md" icon={running ? Loader2 : Search} onClick={runDiscovery} disabled={running||cloud}>
+          {cloud?'수집기 연결 대기':running ? "발굴 중" : "발굴 실행"}
         </Btn>
       </div>
 
@@ -1010,15 +1020,15 @@ function Discovery() {
       {/* 퍼널 */}
       <div className="surf" style={{ padding: 16 }}>
         <div className="flex items-center justify-between" style={{ marginBottom: 14 }}>
-          <span className="eyebrow">발굴 잡 #331 — 캠핑의자 외 3</span>
-          <span className="t3 num" style={{ fontSize: 11.5 }}>예산 31,200 / 50,000원</span>
+          <span className="eyebrow">{cloud?'발굴 작업 연결 대기':'발굴 잡 #331 — 캠핑의자 외 3'}</span>
+          <span className="t3 num" style={{ fontSize: 11.5 }}>{cloud?'예산 미연동':'예산 31,200 / 50,000원'}</span>
         </div>
         <div className="flex items-end" style={{ gap: 2, height: 56 }}>
           {funnel.map(([label, n, pctv], i) => (
             <div key={label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
-              <span className="num" style={{ fontSize: 10.5, color: "var(--text-2)" }}>{n.toLocaleString()}</span>
+              <span className="num" style={{ fontSize: 10.5, color: "var(--text-2)" }}>{cloud?'—':n.toLocaleString()}</span>
               <div style={{
-                width: "100%", height: Math.max(3, (Math.log10(n + 1) / Math.log10(10241)) * 30),
+                width: "100%", height: cloud?3:Math.max(3, (Math.log10(n + 1) / Math.log10(10241)) * 30),
                 background: i === funnel.length - 1 ? "var(--accent)" : "var(--surface-3)",
                 borderRadius: 2,
               }} />
@@ -1035,7 +1045,7 @@ function Discovery() {
         </div>
       ) : list.length === 0 ? (
         <Empty icon={Search} title="조건에 맞는 상품이 없습니다"
-          body="등급 필터나 신뢰도 기준을 낮춰보세요. 발굴을 다시 실행하면 새 후보가 추가됩니다."
+          body={cloud?'저장된 후보는 위 조사·검토 기록에서 확인하세요. 수집기 연결 후 새 상품을 탐색할 수 있습니다.':'등급 필터나 신뢰도 기준을 낮춰보세요. 발굴을 다시 실행하면 새 후보가 추가됩니다.'}
           action={<Btn variant="ghost" size="md" onClick={() => { setGrades(["S", "A", "B", "C", "D"]); setMinConf(0); setHideRisk(false); setQ(""); setKw("전체"); }}>필터 초기화</Btn>} />
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(330px,1fr))", gap: 14 }}>
@@ -2346,6 +2356,7 @@ const NAV_ITEMS = [
 
 function Shell() {
   const { state, dispatch } = useApp();
+  const workflow=useWorkflow();
   const { route, sidebarOpen } = state;
   const nav = (name, params) => dispatch({ type: "NAV", name, params });
 
@@ -2409,16 +2420,16 @@ function Shell() {
             <div className="surf-2" style={{ borderRadius: 6, padding: 10, marginBottom: 8 }}>
               <div className="flex items-center justify-between" style={{ marginBottom: 6 }}>
                 <span className="eyebrow" style={{ fontSize: 10 }}>오늘 예산</span>
-                <span className="num t3" style={{ fontSize: 10.5 }}>{Math.round((spendTotal / state.settings.dailyBudget) * 100)}%</span>
+                <span className="num t3" style={{ fontSize: 10.5 }}>{workflow.config.mode==='cloud'?'미연동':`${Math.round((spendTotal/state.settings.dailyBudget)*100)}%`}</span>
               </div>
               <div className="bar-track" style={{ marginBottom: 6 }}>
                 <div className="bar-fill" style={{ width: `${(spendTotal / state.settings.dailyBudget) * 100}%`, background: "var(--accent)" }} />
               </div>
-              <div className="num t2" style={{ fontSize: 11 }}>{KRW(spendTotal)} / {KRW(state.settings.dailyBudget)}</div>
+              <div className="num t2" style={{ fontSize: 11 }}>{workflow.config.mode==='cloud'?'—':`${KRW(spendTotal)} / ${KRW(state.settings.dailyBudget)}`}</div>
             </div>
-            <button className="navitem" onClick={() => dispatch({ type: "LOGOUT" })}>
+            <button className="navitem" onClick={() => workflow.config.mode==='cloud'?workflow.signOut():dispatch({ type: "LOGOUT" })}>
               <div style={{ width: 20, height: 20, borderRadius: 10, background: "var(--surface-3)", display: "grid", placeItems: "center", fontSize: 9.5, fontWeight: 700, flexShrink: 0 }}>운</div>
-              <span style={{ flex: 1, fontSize: 12.5 }}>운영자</span>
+              <span style={{ flex: 1, fontSize: 12.5 }}>{workflow.config.mode==='cloud'?'로그아웃':'운영자'}</span>
               <ChevronRight size={13} />
             </button>
           </div>
@@ -2459,7 +2470,9 @@ function Shell() {
    ROOT
 ============================================================================ */
 export default function App() {
-  const [state, dispatch] = useReducer(reducer, initialState);
+  const workflow=useWorkflow();
+  const cloud=workflow.config.mode==='cloud';
+  const [state, dispatch] = useReducer(reducer, {...initialState,...(cloud?{cloudMode:true,products:[],orders:[],spend:{ai:0,image:0,scrape:0}}:{})});
   const ctx = useMemo(() => ({ state, dispatch }), [state]);
 
   return (
@@ -2471,7 +2484,8 @@ export default function App() {
         }
       `}</style>
       <div data-app data-theme={state.theme}>
-        {state.authed ? <Shell /> : <Login />}
+        {cloud?(workflow.status==='loading'?<p role="status" style={{padding:24}}>로그인 상태 확인 중…</p>:workflow.status==='signedIn'?<Shell key={workflow.user.id}/>:<Login />):(state.authed?<Shell/>:<Login/>)}
+        {cloud&&workflow.error&&<p role="alert" style={{padding:12}}>{workflow.error}</p>}
         <Toasts />
       </div>
     </AppCtx.Provider>

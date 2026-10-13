@@ -6,6 +6,7 @@ import { local1688CollectorPlugin } from "./server/collect1688.js";
 import { agencyWorkflowPlugin } from "./server/agencyWorkflow.js";
 import { WorkflowStore } from "./server/workflowStore.js";
 import { seedP2013Research } from "./server/p2013Research.js";
+import { resolveWorkflowConfig } from './src/data/workflowConfig.js';
 
 const STATE_FILE = ".preview-sync-state.json";
 
@@ -117,14 +118,19 @@ function livePreviewSync(syncUrl) {
 
 export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
+  if(env.VITE_WORKFLOW_MODE||Object.keys(env).some(key=>/^VITE_/i.test(key)&&/SECRET|SERVICE_ROLE/i.test(key))){
+    resolveWorkflowConfig({...env,MODE:mode,PROD:command==='build'});
+  }
   const plugins = [react()];
 
   if (command === "serve") {
-    plugins.push(local1688CollectorPlugin());
-    const store = new WorkflowStore(path.resolve('.seller-os'));
-    seedP2013Research(store);
-    plugins.push(agencyWorkflowPlugin({ store, config: env }));
-    if (env.PREVIEW_SYNC_URL) plugins.push(livePreviewSync(env.PREVIEW_SYNC_URL));
+    if(env.VITE_WORKFLOW_MODE==='local'){
+      plugins.push(local1688CollectorPlugin());
+      const store = new WorkflowStore(path.resolve('.seller-os'));
+      seedP2013Research(store);
+      plugins.push(agencyWorkflowPlugin({ store, config: env }));
+    }
+    if (env.PREVIEW_SYNC_URL&&env.VITE_WORKFLOW_MODE==='local') plugins.push(livePreviewSync(env.PREVIEW_SYNC_URL));
   }
 
   return {
