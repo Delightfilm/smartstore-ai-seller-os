@@ -10,7 +10,7 @@ const publicKey=Deno.env.get('SUPABASE_ANON_KEY')!;
 const writer=createClient(url,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false,autoRefreshToken:false}});
 const userClient=(authorization:string)=>createClient(url,publicKey,{auth:{persistSession:false,autoRefreshToken:false},global:{headers:{Authorization:authorization}}});
 const handler=createAgencyHandler({
- allowedOrigins:['http://127.0.0.1:5173','http://localhost:5173'],
+ allowedOrigins:['http://127.0.0.1:5173','http://localhost:5173','https://seller-os-delightfilm.pages.dev'],
  authenticate:({authorization,workspaceId})=>authenticateRequest({authorization,workspaceId},{
   getUser:async token=>{const {data,error}=await writer.auth.getUser(token);return error?null:data.user;},
   getMembership:async(workspaceId,userId)=>{
