@@ -1,10 +1,11 @@
-export function createWorkflowClient({config,workspaceId,getAccessToken,fetchImpl=fetch}){
+export function createWorkflowClient({config,workspaceId,getAccessToken,fetchImpl=fetch,applicationOrigin=globalThis.location?.origin}){
  let generation=0;
  const pending=new Map();
  return {
   invalidate(){generation++;pending.clear();},
   async localWorker(action){
    if(config.mode!=='cloud')throw new Error('클라우드 모드에서 연결하세요.');
+   if(!['http://127.0.0.1:5173','http://localhost:5173'].includes(applicationOrigin))throw Object.assign(new Error('PC 조사 작업자는 이 PC의 로컬 대시보드에서만 연결할 수 있습니다. 외부 화면에서는 저장된 조사 결과를 확인하세요.'),{code:'LOCAL_WORKER_UNAVAILABLE'});
    const captured=generation,token=await getAccessToken();
    if(!token||generation!==captured)throw new Error('로그인이 필요합니다.');
    const response=await fetchImpl('/api/research-worker',{method:'POST',headers:{'content-type':'application/json',authorization:`Bearer ${token}`},body:JSON.stringify({action}),signal:AbortSignal.timeout(40000)});
