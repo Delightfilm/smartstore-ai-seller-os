@@ -1,5 +1,12 @@
 # HANDOFF.md
 
+## Naver Commerce Native execution — 2026-10-15 (in progress)
+
+- User approved plan + Native execution; current branch `codex/purchase-agency-pipeline`, execution base `9255307`, clean user-directory baseline. No main merge. Reused explicitly selected checkout/server instead of creating a new worktree. Bundled Bash bookkeeping script failed (missing PATH tools, then Windows mkdir permission loop); manual ignored ledger used instead; no app process changes.
+- Task1 implemented `server/commerce/naverReader.js` and14tests. Exact bcryptjs3.0.3 installed/lockfile updated; existing8audit findings (2moderate/6high) remain, no unrelated audit fix. Official current docs checked: account object has accountId/accountUid; channel schema is a single object, normalized to internal channels array (bounded arrays also validated). Fixed host/token+twoGET, SELF bcrypt signature, memory-only cache, shared single401retry, no429retry, request20s/body64KiB/whole-read45s, abort/clear epoch, safe IDs/allowlisted Naver store URLs, minimized output.
+- RED: `node --test test/naverCommerceReader.test.js` failed ERR_MODULE_NOT_FOUND before implementation. GREEN14/14. Fresh whole `npm test`:119PASS/0FAIL/6optionalSKIP(125total). No real credentials or Commerce requests; all new upstream tests use synthetic responses. Full clean install/build and final review remain pending. Tasks2–5 not complete; cloud/UI/app setup unchanged.
+- Next: protected cloud snapshot + permission tests, local adapter/manual binding, existing-settings UI, then human app/IP/secret setup and actual external save/reload verification. Registration/shipment and all commercial operations remain excluded.
+
 ## Naver Commerce implementation plan — 2026-10-15
 
 - Branch `codex/purchase-agency-pipeline`, base `4229e80`; plan checkpoint commit is branch HEAD after commit/push. User approved the local-PC design. Verified exact user-directory checkout, clean starting status, branch/remotes/log; read AGENTS and approved spec. No main checkout/merge or unrelated changes.
