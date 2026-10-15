@@ -1,5 +1,13 @@
 # HANDOFF.md
 
+## Naver Commerce implementation plan — 2026-10-15
+
+- Branch `codex/purchase-agency-pipeline`, base `4229e80`; plan checkpoint commit is branch HEAD after commit/push. User approved the local-PC design. Verified exact user-directory checkout, clean starting status, branch/remotes/log; read AGENTS and approved spec. No main checkout/merge or unrelated changes.
+- Added `docs/superpowers/plans/2026-10-15-naver-commerce-local-read.md`; marked design approved in its spec. Five tasks: bounded read-only client, protected cloud snapshot/RLS, authenticated local adapter/manual channel binding, existing-settings status, human setup/live release acceptance. Fixed shared contracts and self-reviewed coverage, failure cases, task boundaries and signatures inline; no subagent dispatched.
+- **Planning checkpoint only:** no product-code/dependency/install/app/key/IP registration/API call/schema/Edge/Pages/Auth/billing changes. Existing UI, candidates, local worker and other apps were not changed. No registration/shipment/purchase/payment. No live Commerce test performed.
+- Fresh verification: `npm test` exit0,111tests/105PASS/0FAIL/6optionalSKIP; `git diff --check` PASS (line-ending warning only). No ci/build necessary for these documentation-only changes. Files changed: this HANDOFF, approved spec status and new plan. Commit/push only these documents; no main merge.
+- **Next:** user reviews linked implementation plan and chooses execution method. Recommend Native (implement here, one final independent review); Subagent-driven is the per-task implementation/review alternative. Writing-plans skill requires this review before implementation. Then execute approved tasks, opening human setup windows when needed; do not claim connected until actual token+twoGET/manual binding/cloud save/external authenticated reload and permission checks pass. Keep existing HOLD/NOT_PUBLISHED and all commercial locks.
+
 ## Naver Commerce authentication/read investigation — 2026-10-15
 
 - Branch `codex/purchase-agency-pipeline`, base `18d5f1f`; checkpoint commit is branch HEAD after commit/push. User reported SmartStore approval and authorized authentication/account+channel read/dashboard integration only. Exact user-directory checkout/status/branch/remotes/log checked; clean at start. Main UI and existing cloud/PC components unchanged. No product registration/edit/shipment/purchase/payment authorization.
