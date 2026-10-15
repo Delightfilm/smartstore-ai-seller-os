@@ -3,10 +3,12 @@ import { ArrowUp, ArrowDown, X, Upload, Save } from 'lucide-react';
 import { useWorkflow } from '../auth/AuthProvider.jsx';
 import { createDetailMediaController } from './detailMediaController.js';
 import DetailMediaPreview from './DetailMediaPreview.jsx';
+import { revealCloseConfirmation, restoreEditorFocus } from './mediaDialogFocus.js';
 const checkLabels = { optionMatch: '상품·옵션·포함 구성 일치', copyFacts: '카피의 사실 확인', imageRights: '상업적 이미지 사용권 확인', unknownsLabelled: '고시·배송 미확인 정보 표시' };
 export default function DetailMediaPanel({ candidate, onClose }) {
  const { client, user } = useWorkflow();
  const dialog = useRef(null), controller = useRef(null), lastRevision = useRef(candidate.revision);
+ const closeConfirmation = useRef(null), closeOrigin = useRef(null);
  const [state, setState] = useState(null), [confirmClose, setConfirmClose] = useState(false), [showPreview, setShowPreview] = useState(false), [fileError, setFileError] = useState('');
  useEffect(() => {
   dialog.current.showModal();
@@ -17,7 +19,11 @@ export default function DetailMediaPanel({ candidate, onClose }) {
  }, [client, user?.id, candidate.id]);
  useEffect(() => { if (lastRevision.current !== candidate.revision) { lastRevision.current = candidate.revision; void controller.current?.load({ workspaceId: import.meta.env.VITE_SELLER_OS_WORKSPACE_ID, offerId: candidate.id }, candidate.revision); } }, [candidate.revision, candidate.id]);
  useEffect(() => { if (!state?.dirty) return; const guard = e => { e.preventDefault(); e.returnValue = ''; }; window.addEventListener('beforeunload', guard); return () => window.removeEventListener('beforeunload', guard); }, [state?.dirty]);
- const close = () => { if (controller.current?.requestSwitch().confirmationRequired) setConfirmClose(true); else onClose(); };
+ useEffect(() => {
+  if (confirmClose) revealCloseConfirmation(closeConfirmation.current);
+  else if (closeOrigin.current) { restoreEditorFocus(closeOrigin.current); closeOrigin.current = null; }
+ }, [confirmClose]);
+ const close = () => { if (controller.current?.requestSwitch().confirmationRequired) { if (!confirmClose) closeOrigin.current = document.activeElement; setConfirmClose(true); } else onClose(); };
  const draft = state?.draft, locked = state?.busy || state?.conflict || state?.uncertain;
  const edit = patch => controller.current.edit(patch);
  const panelEdit = (index, patch) => edit({ panels: draft.panels.map((p, i) => i === index ? { ...p, ...patch } : p) });
@@ -33,7 +39,7 @@ export default function DetailMediaPanel({ candidate, onClose }) {
  return <dialog ref={dialog} className="detail-media-dialog" aria-labelledby="detail-media-title" onCancel={e => { e.preventDefault(); close(); }}>
   <header className="detail-media-heading"><div><h2 id="detail-media-title">완성 이미지·상세페이지</h2><p>{candidate.title} · 상품 {candidate.id}</p></div><button className="btn btn-ghost" type="button" aria-label="편집 닫기" onClick={close}><X size={20}/></button></header>
   <p className="detail-media-disclosure">선택만으로 전송되지 않습니다. 업로드를 누르면 Seller OS 비공개 클라우드에 저장합니다. GPT·네이버·퀵스타 자동 전송 및 상품 등록·배송 신청은 하지 않습니다.</p>
-  {confirmClose && <section className="detail-media-close-confirm" aria-label="미저장 변경 확인"><h3>{state?.busy ? '요청 처리 중입니다' : '미저장 변경이 있습니다'}</h3><p>이미 서버에 저장된 결과는 닫아도 취소되지 않습니다. 로컬 선택·편집만 버려집니다.</p><div className="detail-media-actions"><button type="button" className="btn btn-primary" disabled={state?.busy || !state?.contentDirty || state?.selectedFiles.length > 0 || state?.conflict} onClick={async () => { if (await controller.current.save()) onClose(); }}>초안 저장 후 닫기</button><button type="button" className="btn btn-ghost" disabled={state?.busy} onClick={onClose}>로컬 변경 버리고 닫기</button><button type="button" className="btn btn-ghost" onClick={() => setConfirmClose(false)}>계속 편집</button></div></section>}
+  {confirmClose && <section ref={closeConfirmation} tabIndex={-1} className="detail-media-close-confirm" aria-label="미저장 변경 확인"><h3>{state?.busy ? '요청 처리 중입니다' : '미저장 변경이 있습니다'}</h3><p>이미 서버에 저장된 결과는 닫아도 취소되지 않습니다. 로컬 선택·편집만 버려집니다.</p><div className="detail-media-actions"><button type="button" className="btn btn-primary" disabled={state?.busy || !state?.contentDirty || state?.selectedFiles.length > 0 || state?.conflict} onClick={async () => { if (await controller.current.save()) onClose(); }}>초안 저장 후 닫기</button><button type="button" className="btn btn-ghost" disabled={state?.busy} onClick={onClose}>로컬 변경 버리고 닫기</button><button type="button" className="btn btn-ghost" onClick={() => setConfirmClose(false)}>계속 편집</button></div></section>}
   <p role="status" className="detail-media-message">{state?.message || (state?.busy ? '서버 상태 확인 중…' : draft ? `초안 r${draft.revision} · ${state.dirty ? '미저장 변경 있음' : '서버 조회 기준'} · ${draft.review.status === 'REVIEWED_INTERNAL' && !state.stale ? '내부 검수 완료 · 판매 승인 아님' : '내부 검수 필요'}` : '비공개 저장소 연결 확인 중')}</p>
   {!draft && !state?.busy && <button type="button" className="btn btn-ghost" onClick={() => controller.current.load(state.scope, candidate.revision)}>연결 다시 확인</button>}
   {draft && <>

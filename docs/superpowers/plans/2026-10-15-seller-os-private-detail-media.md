@@ -10,7 +10,18 @@
 
 **Spec:** `docs/superpowers/specs/2026-10-15-seller-os-private-detail-media-design.md` (2026-10-15 사용자 서면 승인).
 
-**Status:** 2026-10-15 사용자 계획 승인 및 Native 실행 선택. 현재 전용 브랜치에서 순차 구현 중. 실제 클라우드 적용은 소스 독립 검토·무료 사용량·권한 검증 후 진행한다.
+**Status:** 2026-10-16 Native source+new-only cloud technical acceptance checkpoint. Tasks1–4 implemented/tested; Task5 newDB/bucket/API/lease and TEST_ONLY owner upload/read/reload/exclusion verified. Actual owner JWT automation remainsSKIP; role simulation distinguished from HTTP. ActualGPT not supplied; Tasks6–8 sequentially pending. Detailed command/review/permission evidence in HANDOFF and operations runbook. Original checklists below remain granular acceptance obligations, not blanket completed claims.
+
+| Task | Proven checkpoint / remaining acceptance |
+|---|---|
+| 1 | Exact3WASM/Node+Deno/hash/EXIF/corrupt/8MP; hosted4fixture130ms boot PASS; peakRSS/concurrenttraffic not certified |
+| 2 | New-onlymigration remote20261015154235, actualDB rollback/CAS/quota/RLS PASS |
+| 3 | NewJWTprotectedEdgev1/12runtimefileparity, liveHTTPdeny3PASS/ownerauto1SKIP |
+| 4 | ExistingCmodal+focus/sizingfix, savedr2/fullreload andexcludedr3/fullreload; actualGPTmultipanelpending |
+| 5 | FreeUsage+safeprivatelease until2026-10-16T15:35:04Z, own31,179Bfixture save/read/SHA; SQLauthStorage0, notcrossaccountHTTP |
+| 6 | NEED actualGPTfiles; existingmemoZIP in Downloads, no newcommercialpass |
+| 7 | Waiting afterTask6, keys/IP/storehumanconfirmationnotdone |
+| 8 | ExistingPagesunchanged; no deploymentcompletionclaim |
 
 ## Global Constraints
 
