@@ -116,7 +116,7 @@ export default function PurchaseAgencyPanel({inspection}){
         {button(dirty?'변경사항 저장':'후보 저장',save)}
         {button('HTML 초안 다운로드',async()=>download(`detail-${candidate.id}.html`,detail.html,'text/html'))}
         <h3>5. 등록 준비</h3>
-        <p>스토어 심사·커머스 API 권한 확인 대기. 실제 등록 API 호출은 구현/활성화하지 않았습니다.</p>
+        <p>스토어 승인 보고와 커머스 API 연결 확인은 별개입니다. 실제 인증·조회 결과는 설정 → API 키에서 확인하세요. 상품 등록 API는 활성화하지 않았습니다.</p>
         {button('저장된 등록 준비 자료 다운로드',async()=>download(`preparation-${candidate.id}.json`,JSON.stringify(await api({action:'export',id:candidate.id}),null,2),'application/json'),dirty)}
       </>}
     </fieldset>

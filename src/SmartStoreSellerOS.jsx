@@ -13,6 +13,7 @@ import { savedCandidateViews } from './dashboard/discoveryView.js';
 import SavedCandidateCards from './dashboard/SavedCandidateCards.jsx';
 import EstimateProfileFields from './dashboard/EstimateProfileFields.jsx';
 import DiscoveryProgress from './dashboard/DiscoveryProgress.jsx';
+import CommerceConnection from './dashboard/CommerceConnection.jsx';
 
 /* ============================================================================
    DESIGN TOKENS
@@ -2290,9 +2291,9 @@ function Settings() {
           )}
           {tab === "keys" && (
             <>
-              {[["1688 Open API", "sk_live_••••••••••••8f2a", "미연결"], ["네이버 커머스 API", "••••••••••••4b71", "미연결"],
+              {[["1688 Open API", "sk_live_••••••••••••8f2a", "미연결"], ["네이버 커머스 API", "—", "미연결"],
               ["OpenAI (GPT Image)", "sk-••••••••••••92c4", "미연결"], ["Anthropic (Claude)", "sk-ant-••••••••7d10", "미연결"],
-              ["퀵스타", "—", "협의 중"]].map(([name, key, status]) => (
+              ["퀵스타", "—", "협의 중"]].map(([name, key, status]) => name === "네이버 커머스 API" ? <CommerceConnection key={name} /> : (
                 <div key={name} className="flex items-center justify-between" style={{ padding: "12px 0", borderBottom: "1px solid var(--line)", gap: 12, flexWrap: "wrap" }}>
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 500 }}>{name}</div>
@@ -2305,7 +2306,7 @@ function Settings() {
                 </div>
               ))}
               <div className="t3" style={{ fontSize: 11.5, marginTop: 14, lineHeight: 1.6 }}>
-                Prototype 단계에서는 외부 API를 연결하지 않습니다. 모든 화면은 Mock 데이터로 동작합니다.
+                네이버 커머스 API는 실제 저장된 확인 결과를 표시합니다. 나머지 API 키 행과 우측 시뮬레이터는 데모 표시이며 실제 연결·판매 승인 상태가 아닙니다.
               </div>
             </>
           )}

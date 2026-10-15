@@ -3,6 +3,23 @@ import assert from 'node:assert/strict';
 import { createWorkflowClient } from '../src/data/workflowClient.js';
 import { summarizeCandidates } from '../src/dashboard/operatingSummary.js';
 
+test('commerce local guard runs before token fetch and allows only dev exact origins',async()=>{
+ for(const [applicationOrigin,localDevelopment] of [['https://seller-os-delightfilm.pages.dev',true],['http://127.0.0.1:5173',false],['http://localhost:5174',true]]){
+  let calls=0;const client=createWorkflowClient({config:{mode:'cloud'},applicationOrigin,localDevelopment,getAccessToken:async()=>{calls++;return 'token';},fetchImpl:async()=>{calls++;return Response.json({});}});
+  await assert.rejects(client.commerceLocal('verify'),{code:'COMMERCE_LOCAL_UNAVAILABLE'});assert.equal(calls,0);
+ }
+});
+test('commerce local sends fixed workspace and invalidation aborts delayed request',async()=>{
+ let captured,release;const client=createWorkflowClient({config:{mode:'cloud'},workspaceId:'fixed-workspace',applicationOrigin:'http://127.0.0.1:5173',localDevelopment:true,getAccessToken:async()=> 'token',fetchImpl:async(url,options)=>{captured={url,options};return new Promise(r=>release=r);}});
+ const pending=client.commerceLocal('verify');await new Promise(r=>setImmediate(r));client.invalidate();assert.equal(captured.options.signal.aborted,true);
+ release(Response.json({status:'VERIFIED'}));await assert.rejects(pending,{code:'SESSION_CHANGED'});assert.equal(captured.url,'/api/commerce-local');assert.deepEqual(JSON.parse(captured.options.body),{action:'verify',workspaceId:'fixed-workspace'});
+});
+test('commerceRead uses protected cloud action and logout cancel can finish after invalidation',async()=>{
+ const requests=[];const client=createWorkflowClient({config:{mode:'cloud',url:'https://project.supabase.co',publishableKey:'public'},workspaceId:'fixed',applicationOrigin:'http://127.0.0.1:5173',localDevelopment:true,getAccessToken:async()=> 'old-user-token',fetchImpl:async(url,options)=>{requests.push({url,options});return Response.json({actorId:'actor',snapshot:null});}});
+ await client.commerceRead();assert.equal(JSON.parse(requests[0].options.body).action,'commerceRead');
+ const cancelling=client.commerceLocal('cancel');client.invalidate();await cancelling;assert.equal(JSON.parse(requests[1].options.body).action,'cancel');assert.equal(requests[1].options.headers.authorization,'Bearer old-user-token');
+});
+
 test('external dashboards never request a token or call the PC-only worker endpoint',async()=>{
  for(const applicationOrigin of ['https://seller-os.pages.dev','http://127.0.0.1:5173.example.com','http://localhost:5174',undefined]){
   let tokens=0,requests=0;

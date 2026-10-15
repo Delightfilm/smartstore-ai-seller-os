@@ -26,7 +26,7 @@ export function AuthProvider({children}){
  useEffect(()=>{
   if(!supabase)return;
   let active=true,revision=0;
-  const apply=s=>{const changed=session.current?.user?.id!==s?.user?.id;session.current=s;if(changed){client.invalidate();latestRecords.current=[];publishRecords([]);setRecordsLoaded(false);setError('');}setUser(s?.user||null);setStatus(s?'signedIn':'signedOut');};
+  const apply=s=>{const changed=session.current?.user?.id!==s?.user?.id;if(changed&&session.current)client.commerceLocal('cancel').catch(()=>{});session.current=s;if(changed){client.invalidate();latestRecords.current=[];publishRecords([]);setRecordsLoaded(false);setError('');}setUser(s?.user||null);setStatus(s?'signedIn':'signedOut');};
   const {data}=supabase.auth.onAuthStateChange((event,s)=>{revision++;if(active)apply(s);});
   const atStart=revision;
   supabase.auth.getSession().then(({data,error})=>{if(active&&revision===atStart){if(error)setError('로그인 세션을 확인하지 못했습니다.');apply(data.session);}});
@@ -43,6 +43,8 @@ export function AuthProvider({children}){
   if(error)throw new Error('인증번호/링크가 올바르지 않거나 만료됐습니다. 새 인증메일을 받아 주세요.');
  };
  const signOut=async()=>{
+  const commerceCancellation=client.commerceLocal('cancel').catch(()=>{});client.invalidate();
+  await commerceCancellation;
   await client.localWorker('stop').catch(()=>{});
   session.current=null;client.invalidate();latestRecords.current=[];publishRecords([]);setRecordsLoaded(false);setUser(null);setStatus('signedOut');
   const {error}=await supabase.auth.signOut({scope:'local'});if(error)setError('로그아웃 후 세션 제거 상태를 확인하세요.');
