@@ -156,6 +156,12 @@ textarea {
 .image-kit-export .review-record-button { min-height: 44px; white-space: normal; }
 /* Private result editor extends the approved C workbench, not the app shell. */
 .detail-media-open{width:100%;min-height:44px;margin-top:12px}
+.image-kit-export .btn{min-height:44px;min-width:44px;white-space:normal}
+.image-kit-copy{margin-top:8px}
+.image-kit-request{margin-top:10px;overflow-wrap:anywhere}
+.image-kit-request summary{min-height:44px;cursor:pointer;line-height:1.5;padding-block:10px}
+.image-kit-request label{display:block;margin-top:8px}
+[data-app] .image-kit-request textarea.inp{display:block;width:100%;margin-top:8px;min-height:132px;resize:vertical;font-size:14px;line-height:1.5}
 .detail-media-dialog{width:min(1120px,calc(100vw - 32px));max-height:calc(100dvh - 32px);padding:24px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--text);overflow:auto}
 .detail-media-dialog::backdrop{background:rgb(0 0 0 / .45)}
 .detail-media-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:18px}
