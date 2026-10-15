@@ -9,6 +9,19 @@ const requestId='00000000-0000-4000-8000-000000000041';
 const candidate={id:'123',revision:1,product:{offerId:'123'},terms:{},listing:{},market:null,research:{salePriceKrw:14900},review:{status:'HOLD',reasons:['근거 확인'],note:'',stale:false},publication:{status:'NOT_PUBLISHED'}};
 const request=(body,headers={})=>new Request('https://project.supabase.co/functions/v1/seller-os-agency',{method:'POST',headers:{origin:'http://127.0.0.1:5173','content-type':'application/json',authorization:'Bearer user-token',...headers},body:JSON.stringify(body)});
 
+test('commerce read and publish require identity exact fields and sanitize reports before storage',async()=>{
+ let writes=0;const handler=createAgencyHandler({allowedOrigins:['http://127.0.0.1:5173'],authenticate:async({authorization,workspaceId})=>{
+  if(authorization!=='Bearer user-token')throw Object.assign(new Error('SIGN_IN_REQUIRED'),{code:'SIGN_IN_REQUIRED',status:401});
+  if(workspaceId!==workspace)throw Object.assign(new Error('WORKSPACE_FORBIDDEN'),{code:'WORKSPACE_FORBIDDEN',status:403});return {userId:'actor',workspaceId};
+ },storeFor:()=>({}),commerceFor:()=>({read:async()=>null,publish:async()=>{writes++;return {revision:1};}})});
+ const read={action:'commerceRead',workspaceId:workspace};const response=await handler(request(read));assert.equal(response.status,200);assert.deepEqual(await response.json(),{actorId:'actor',snapshot:null});
+ assert.equal((await handler(request(read,{authorization:'Bearer fake'}))).status,401);
+ assert.equal((await handler(request({...read,workspaceId:requestId}))).status,403);
+ const write={action:'commercePublish',workspaceId:workspace,expectedRevision:0,report:{status:'FAILED',channel:null,errorCode:'AUTH_FAILED'}};
+ assert.equal((await handler(request({...write,report:{...write.report,token:'secret'}}))).status,400);assert.equal(writes,0);
+ assert.equal((await handler(request(write))).status,200);assert.equal(writes,1);
+});
+
 test('auth requires a verified user and workspace membership, never user_metadata roles',async()=>{
  const deps={getUser:async()=>({id:'user',user_metadata:{role:'owner'}}),getMembership:async()=>null};
  await assert.rejects(()=>authenticateRequest({authorization:'',workspaceId:workspace},deps),e=>e.status===401);

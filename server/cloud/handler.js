@@ -2,10 +2,13 @@ import { failure, uuid } from './errors.js';
 import { validateCandidateUpdate } from '../candidateUpdate.js';
 import { renderDetail } from '../../src/purchaseAgency.js';
 import { reviewCandidate, researchMargins } from '../../src/researchReview.js';
+import { validateCommerceReport } from '../commerce/snapshot.js';
 const shapes={list:['action','workspaceId'],events:['action','workspaceId','id'],export:['action','workspaceId','id'],update:['action','workspaceId','requestId','id','revision','terms','listing','comparisons','research','review'],search:['action','workspaceId','query'],collect:['action','workspaceId','url'],market:['action','workspaceId','id','revision','query']};
 const researchShapes={researchList:[],researchEnqueue:['requestId','kind','query','url','estimateProfile'],researchRetry:['jobId'],workerConnect:['workerId'],workerHeartbeat:['workerId','leaseId'],workerClaim:['workerId'],workerStop:['workerId'],workerComplete:['workerId','jobId','leaseId','kind','urls','offers','observedAt','observation'],workerFail:['workerId','jobId','leaseId','code']};
 for(const [action,keys] of Object.entries(researchShapes))shapes[action]=['action','workspaceId',...keys];
-export function createAgencyHandler({allowedOrigins,authenticate,storeFor,researchFor}){
+shapes.commerceRead=['action','workspaceId'];
+shapes.commercePublish=['action','workspaceId','expectedRevision','report'];
+export function createAgencyHandler({allowedOrigins,authenticate,storeFor,researchFor,commerceFor}){
  if(!Array.isArray(allowedOrigins)||!allowedOrigins.length)throw failure('ORIGINS_REQUIRED');
  return async req=>{
   const origin=req.headers.get('origin');const allowed=origin!==null&&allowedOrigins.includes(origin);
@@ -26,6 +29,13 @@ export function createAgencyHandler({allowedOrigins,authenticate,storeFor,resear
    if(input.action==='update'&&(!uuid(input.requestId)||!Number.isInteger(input.revision)||input.revision<1))throw failure('INVALID_WRITE_IDENTITY');
    const identity=await authenticate({authorization:req.headers.get('authorization'),workspaceId:input.workspaceId});
    if(identity.workspaceId!==input.workspaceId)throw failure('WORKSPACE_FORBIDDEN',403);
+   if(input.action==='commerceRead'||input.action==='commercePublish'){
+    if(!commerceFor)throw failure('COMMERCE_UNAVAILABLE',503);
+    const commerce=commerceFor({...identity,authorization:req.headers.get('authorization')});
+    if(input.action==='commerceRead')return response({actorId:identity.userId,snapshot:await commerce.read()});
+    if(!Number.isSafeInteger(input.expectedRevision)||input.expectedRevision<0)throw failure('COMMERCE_REPORT_INVALID');
+    return response(await commerce.publish({expectedRevision:input.expectedRevision,report:validateCommerceReport(input.report)}));
+   }
    const store=storeFor({...identity,requestId:input.requestId,authorization:req.headers.get('authorization')});
    if(researchShapes[input.action]){
     if(!researchFor)throw failure('RESEARCH_UNAVAILABLE',503);
