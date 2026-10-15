@@ -3,6 +3,7 @@ import { AlertTriangle, ArrowRight, ImageOff, Package } from 'lucide-react';
 import { reviewLabels } from '../researchReview.js';
 import DiscoveryEstimatePanel from './DiscoveryEstimatePanel.jsx';
 import ImageKitExport from './ImageKitExport.jsx';
+import DetailMediaPanel from './DetailMediaPanel.jsx';
 import { useWorkflow } from '../auth/AuthProvider.jsx';
 
 export const money = value => value == null ? '미확정' : `${value.toLocaleString('ko-KR')}원`;
@@ -18,6 +19,7 @@ function CandidateImage({candidate,large=false}) {
 export default function CandidateGallery({views,onReview}) {
  const {user}=useWorkflow();
  const [selectedId,setSelectedId]=useState('816692570613');
+ const [mediaCandidate,setMediaCandidate]=useState(null);
  const selected=views.find(c=>c.id===selectedId)||views[0];
  return <div className="candidate-workspace" data-testid="saved-discovery-candidates">
   <div className="candidate-grid" aria-label="저장된 상품 후보">
@@ -35,7 +37,9 @@ export default function CandidateGallery({views,onReview}) {
    <details className="inspector-estimate"><summary>배송비 범위·옵션별 추정 근거</summary>{selected.estimate?<DiscoveryEstimatePanel estimate={selected.estimate} compact/>:<p>추정 근거와 시나리오는 전체 조사·검토 기록에서 확인하세요. 확인되지 않은 값은 0원으로 처리하지 않습니다.</p>}</details>
    <button type="button" className="btn btn-primary review-record-button" onClick={()=>onReview(selected.id)}>전체 조사·검토 기록 <ArrowRight size={16}/></button>
    <ImageKitExport key={`${user?.id||'local'}:${selected.id}:${selected.revision}`} selected={selected}/>
+   <button type="button" className="btn btn-ghost detail-media-open" onClick={()=>setMediaCandidate(selected)}>완성 이미지·상세페이지</button>
    <p className="inspector-lock"><Package size={13}/> 상품 등록·배송 신청 미실행</p>
   </aside>}
+  {mediaCandidate&&<DetailMediaPanel key={`${user?.id||'local'}:${mediaCandidate.id}`} candidate={views.find(c=>c.id===mediaCandidate.id)||mediaCandidate} onClose={()=>setMediaCandidate(null)}/>}
  </div>;
 }

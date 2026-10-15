@@ -1,9 +1,12 @@
+import { createMediaClient } from './mediaClient.js';
 export function createWorkflowClient({config,workspaceId,getAccessToken,fetchImpl=fetch,applicationOrigin=globalThis.location?.origin,localDevelopment=import.meta.env?.DEV===true}){
  let generation=0;
  const pending=new Map();
  const commerceRequests=new Set();
+ const media=createMediaClient({config,workspaceId,getAccessToken,fetchImpl,getGeneration:()=>generation});
  return {
-  invalidate(){generation++;pending.clear();for(const controller of commerceRequests)controller.abort();commerceRequests.clear();},
+  media,
+  invalidate(){generation++;pending.clear();media.abort();for(const controller of commerceRequests)controller.abort();commerceRequests.clear();},
   commerceRead(){return this.request({action:'commerceRead'});},
   async commerceLocal(action,confirmation){
    if(config.mode!=='cloud'||!localDevelopment||!['http://127.0.0.1:5173','http://localhost:5173'].includes(applicationOrigin))throw Object.assign(new Error('커머스 인증·조회는 이 PC의 로컬 개발 대시보드에서만 가능합니다.'),{code:'COMMERCE_LOCAL_UNAVAILABLE'});
