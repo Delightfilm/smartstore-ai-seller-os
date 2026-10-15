@@ -1,6 +1,6 @@
 # Seller OS 비공개 상세페이지 결과물·운영 검증 설계
 
-상태: **2026-10-15 사용자 서면 설계 승인. 구현계획 작성·검토 단계. 구현·클라우드 변경·배포 전.**
+상태: **2026-10-15 사용자 설계·계획 승인, Native 실행 선택. 순차 구현 중이며 클라우드 변경·배포 완료를 뜻하지 않음.**
 
 ## 1. 목적과 승인 범위
 
@@ -139,7 +139,7 @@ read 응답은 `Cache-Control: private, no-store`, 올바른 image MIME, `X-Cont
 
 롤백은 새 media 진입점을 끄고 검증된 이전 Pages 자산을 다시 배포하는 방식이다. 새 전용 bucket/metadata/history와 모든 기존 후보·Auth·다른 앱 자료는 보존한다. DB reset/blanket push/whole-schema overwrite/DROP CASCADE/자동 파일 삭제는 사용하지 않는다. 기존 shared project의 보안 advisory를 이 작업 중 임의 수정하지 않는다.
 
-현재 단계에서 수정 가능한 것은 이 설계와 HANDOFF 같은 조정 문서다. 제품 코드·migration·새 Edge·bucket·업로드·Pages 배포는 아직 수행하지 않는다. 이 문서의 승인은 구현계획 작성 단계로 이어지며, 승인 전 기능이 완성됐다고 보고하지 않는다.
+사용자가 후속 구현계획과 Native 실행을 승인했다. 계획의 소스 검증·무료 사용량·권한 게이트에 따라 구현하며, 각 단계의 실제 증거가 없으면 완료로 보고하지 않는다.
 
 ## 참고한 공식 근거
 

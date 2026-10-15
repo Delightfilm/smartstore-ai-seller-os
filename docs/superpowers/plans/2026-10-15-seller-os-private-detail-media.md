@@ -10,7 +10,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-10-15-seller-os-private-detail-media-design.md` (2026-10-15 사용자 서면 승인).
 
-**Status:** 구현계획 검토·실행 방식 확인 대기. 현재 제품 코드·의존성·클라우드 변경 없음. 권장 실행은 Native이며, 구현 전 이 계획 검토가 필요하다.
+**Status:** 2026-10-15 사용자 계획 승인 및 Native 실행 선택. 현재 전용 브랜치에서 순차 구현 중. 실제 클라우드 적용은 소스 독립 검토·무료 사용량·권한 검증 후 진행한다.
 
 ## Global Constraints
 
