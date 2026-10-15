@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { AlertTriangle, ArrowRight, ImageOff, Package } from 'lucide-react';
 import { reviewLabels } from '../researchReview.js';
 import DiscoveryEstimatePanel from './DiscoveryEstimatePanel.jsx';
+import ImageKitExport from './ImageKitExport.jsx';
+import { useWorkflow } from '../auth/AuthProvider.jsx';
 
 export const money = value => value == null ? '미확정' : `${value.toLocaleString('ko-KR')}원`;
 const range = values => !values ? '비용 미확정' : values[0]===values[1] ? money(values[0]) : `${money(values[0])} ~ ${money(values[1])}`;
@@ -14,6 +16,7 @@ function CandidateImage({candidate,large=false}) {
 }
 
 export default function CandidateGallery({views,onReview}) {
+ const {user}=useWorkflow();
  const [selectedId,setSelectedId]=useState('816692570613');
  const selected=views.find(c=>c.id===selectedId)||views[0];
  return <div className="candidate-workspace" data-testid="saved-discovery-candidates">
@@ -31,6 +34,7 @@ export default function CandidateGallery({views,onReview}) {
    <section className="inspector-reasons"><h3>보류·검토 사유</h3><ul>{selected.reasons.slice(0,4).map(reason=><li key={reason}>{reason}</li>)}</ul>{selected.reasons.length>4&&<p className="t2">외 {selected.reasons.length-4}개 사유 · 전체 검토에서 확인</p>}</section>
    <details className="inspector-estimate"><summary>배송비 범위·옵션별 추정 근거</summary>{selected.estimate?<DiscoveryEstimatePanel estimate={selected.estimate} compact/>:<p>추정 근거와 시나리오는 전체 조사·검토 기록에서 확인하세요. 확인되지 않은 값은 0원으로 처리하지 않습니다.</p>}</details>
    <button type="button" className="btn btn-primary review-record-button" onClick={()=>onReview(selected.id)}>전체 조사·검토 기록 <ArrowRight size={16}/></button>
+   <ImageKitExport key={`${user?.id||'local'}:${selected.id}:${selected.revision}`} selected={selected}/>
    <p className="inspector-lock"><Package size={13}/> 상품 등록·배송 신청 미실행</p>
   </aside>}
  </div>;
