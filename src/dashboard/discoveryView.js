@@ -1,5 +1,6 @@
-import { reviewCandidate } from '../researchReview.js';
+import { researchMargins, reviewCandidate } from '../researchReview.js';
 import { candidateEstimate } from '../domain/discoveryEstimate.js';
+import { publicUrl, numberOrNull } from '../purchaseAgency.js';
 
 export function discoveryProgress(jobs=[]) {
  const roots=jobs.filter(j=>j.kind==='search'||!j.input?.parentJobId);
@@ -21,10 +22,19 @@ export function discoveryProgress(jobs=[]) {
 export function savedCandidateViews(records=[],{status='전체',sort='latest'}={}) {
  const views=records.map(candidate=>{
   const review=reviewCandidate(candidate);
-  return {id:candidate.id,title:candidate.product?.title||candidate.id,revision:candidate.revision,status:review.status,
+  const estimate=candidateEstimate(candidate);
+  const researchRows=candidate.research?researchMargins(candidate.research):[];
+  const profits=estimate?estimate.options.flatMap(o=>o.scenarios.filter(s=>s.level==='Base').map(s=>s.profitKrw)):researchRows.map(r=>r.profitKrw);
+  const validProfits=profits.filter(Number.isFinite);
+  const images=candidate.product?.images||[];
+  return {id:candidate.id,title:candidate.listing?.name?.trim()||candidate.product?.title||candidate.id,sourceTitle:candidate.product?.title||candidate.id,revision:candidate.revision,status:review.status,
+   imageUrl:images.find(url=>typeof url==='string'&&url.startsWith('https://')&&publicUrl(url))||null,
+   salePriceKrw:numberOrNull(estimate?.profile?.salePriceKrw??candidate.research?.salePriceKrw),
+   profitRange:validProfits.length?[Math.min(...validProfits),Math.max(...validProfits)]:null,
+   economicsLabel:estimate?.stale?'이전 추정치 · 만료':estimate||researchRows.length?'시나리오 추정치':'비용 미확정',
    reasons:review.blockers,profitKrw:review.profitKrw??null,marginPercent:review.marginPercent??null,
    updatedAt:candidate.updatedAt||candidate.product?.collectedAt||null,moq:candidate.product?.minOrderQty??null,
-   variants:candidate.product?.variants?.length??0,estimate:candidateEstimate(candidate)};
+   variants:candidate.product?.variants?.length??0,estimate};
  }).filter(c=>status==='전체'||c.status===status);
  return views.sort((a,b)=>sort==='name'?a.title.localeCompare(b.title,'ko'):sort==='oldest'?String(a.updatedAt||'').localeCompare(String(b.updatedAt||'')):String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')));
 }

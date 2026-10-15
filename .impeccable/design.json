@@ -1,0 +1,584 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-15T10:37:51.992Z",
+  "title": "Design System: Seller OS",
+  "extensions": {
+    "colorMeta": {
+      "accent": {
+        "role": "primary",
+        "displayName": "Forest Green",
+        "tonalRamp": [
+          "oklch(15% 0.0586 168.1)",
+          "oklch(26% 0.0586 168.1)",
+          "oklch(38% 0.0586 168.1)",
+          "oklch(49% 0.0586 168.1)",
+          "oklch(61% 0.0586 168.1)",
+          "oklch(72% 0.0586 168.1)",
+          "oklch(84% 0.0586 168.1)",
+          "oklch(95% 0.0586 168.1)"
+        ]
+      },
+      "accent-fg": {
+        "role": "primary",
+        "displayName": "Action Foreground",
+        "tonalRamp": [
+          "oklch(15% 0.0000 89.9)",
+          "oklch(26% 0.0000 89.9)",
+          "oklch(38% 0.0000 89.9)",
+          "oklch(49% 0.0000 89.9)",
+          "oklch(61% 0.0000 89.9)",
+          "oklch(72% 0.0000 89.9)",
+          "oklch(84% 0.0000 89.9)",
+          "oklch(95% 0.0000 89.9)"
+        ]
+      },
+      "accent-soft": {
+        "role": "primary",
+        "displayName": "Soft Sage",
+        "tonalRamp": [
+          "oklch(15% 0.0108 158.8)",
+          "oklch(26% 0.0108 158.8)",
+          "oklch(38% 0.0108 158.8)",
+          "oklch(49% 0.0108 158.8)",
+          "oklch(61% 0.0108 158.8)",
+          "oklch(72% 0.0108 158.8)",
+          "oklch(84% 0.0108 158.8)",
+          "oklch(95% 0.0108 158.8)"
+        ]
+      },
+      "accent-line": {
+        "role": "primary",
+        "displayName": "Sage Line",
+        "tonalRamp": [
+          "oklch(15% 0.0403 160.5)",
+          "oklch(26% 0.0403 160.5)",
+          "oklch(38% 0.0403 160.5)",
+          "oklch(49% 0.0403 160.5)",
+          "oklch(61% 0.0403 160.5)",
+          "oklch(72% 0.0403 160.5)",
+          "oklch(84% 0.0403 160.5)",
+          "oklch(95% 0.0403 160.5)"
+        ]
+      },
+      "bg": {
+        "role": "neutral",
+        "displayName": "Warm Stone",
+        "tonalRamp": [
+          "oklch(15% 0.0041 121.6)",
+          "oklch(26% 0.0041 121.6)",
+          "oklch(38% 0.0041 121.6)",
+          "oklch(49% 0.0041 121.6)",
+          "oklch(61% 0.0041 121.6)",
+          "oklch(72% 0.0041 121.6)",
+          "oklch(84% 0.0041 121.6)",
+          "oklch(95% 0.0041 121.6)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "White Surface",
+        "tonalRamp": [
+          "oklch(15% 0.0000 89.9)",
+          "oklch(26% 0.0000 89.9)",
+          "oklch(38% 0.0000 89.9)",
+          "oklch(49% 0.0000 89.9)",
+          "oklch(61% 0.0000 89.9)",
+          "oklch(72% 0.0000 89.9)",
+          "oklch(84% 0.0000 89.9)",
+          "oklch(95% 0.0000 89.9)"
+        ]
+      },
+      "surface-2": {
+        "role": "neutral",
+        "displayName": "Mist Surface",
+        "tonalRamp": [
+          "oklch(15% 0.0062 137.8)",
+          "oklch(26% 0.0062 137.8)",
+          "oklch(38% 0.0062 137.8)",
+          "oklch(49% 0.0062 137.8)",
+          "oklch(61% 0.0062 137.8)",
+          "oklch(72% 0.0062 137.8)",
+          "oklch(84% 0.0062 137.8)",
+          "oklch(95% 0.0062 137.8)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Quiet Line",
+        "tonalRamp": [
+          "oklch(15% 0.0093 150.7)",
+          "oklch(26% 0.0093 150.7)",
+          "oklch(38% 0.0093 150.7)",
+          "oklch(49% 0.0093 150.7)",
+          "oklch(61% 0.0093 150.7)",
+          "oklch(72% 0.0093 150.7)",
+          "oklch(84% 0.0093 150.7)",
+          "oklch(95% 0.0093 150.7)"
+        ]
+      },
+      "line-strong": {
+        "role": "neutral",
+        "displayName": "Strong Line",
+        "tonalRamp": [
+          "oklch(15% 0.0188 161.0)",
+          "oklch(26% 0.0188 161.0)",
+          "oklch(38% 0.0188 161.0)",
+          "oklch(49% 0.0188 161.0)",
+          "oklch(61% 0.0188 161.0)",
+          "oklch(72% 0.0188 161.0)",
+          "oklch(84% 0.0188 161.0)",
+          "oklch(95% 0.0188 161.0)"
+        ]
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Forest Ink",
+        "tonalRamp": [
+          "oklch(15% 0.0293 169.9)",
+          "oklch(26% 0.0293 169.9)",
+          "oklch(38% 0.0293 169.9)",
+          "oklch(49% 0.0293 169.9)",
+          "oklch(61% 0.0293 169.9)",
+          "oklch(72% 0.0293 169.9)",
+          "oklch(84% 0.0293 169.9)",
+          "oklch(95% 0.0293 169.9)"
+        ]
+      },
+      "text-2": {
+        "role": "neutral",
+        "displayName": "Secondary Ink",
+        "tonalRamp": [
+          "oklch(15% 0.0224 162.2)",
+          "oklch(26% 0.0224 162.2)",
+          "oklch(38% 0.0224 162.2)",
+          "oklch(49% 0.0224 162.2)",
+          "oklch(61% 0.0224 162.2)",
+          "oklch(72% 0.0224 162.2)",
+          "oklch(84% 0.0224 162.2)",
+          "oklch(95% 0.0224 162.2)"
+        ]
+      },
+      "warn": {
+        "role": "semantic",
+        "displayName": "Review Amber",
+        "tonalRamp": [
+          "oklch(15% 0.1131 70.8)",
+          "oklch(26% 0.1131 70.8)",
+          "oklch(38% 0.1131 70.8)",
+          "oklch(49% 0.1131 70.8)",
+          "oklch(61% 0.1131 70.8)",
+          "oklch(72% 0.1131 70.8)",
+          "oklch(84% 0.1131 70.8)",
+          "oklch(95% 0.1131 70.8)"
+        ]
+      },
+      "warn-soft": {
+        "role": "semantic",
+        "displayName": "Amber Wash",
+        "tonalRamp": [
+          "oklch(15% 0.0249 81.1)",
+          "oklch(26% 0.0249 81.1)",
+          "oklch(38% 0.0249 81.1)",
+          "oklch(49% 0.0249 81.1)",
+          "oklch(61% 0.0249 81.1)",
+          "oklch(72% 0.0249 81.1)",
+          "oklch(84% 0.0249 81.1)",
+          "oklch(95% 0.0249 81.1)"
+        ]
+      },
+      "neg": {
+        "role": "semantic",
+        "displayName": "Negative Red",
+        "tonalRamp": [
+          "oklch(15% 0.1801 27.6)",
+          "oklch(26% 0.1801 27.6)",
+          "oklch(38% 0.1801 27.6)",
+          "oklch(49% 0.1801 27.6)",
+          "oklch(61% 0.1801 27.6)",
+          "oklch(72% 0.1801 27.6)",
+          "oklch(84% 0.1801 27.6)",
+          "oklch(95% 0.1801 27.6)"
+        ]
+      },
+      "dark-accent": {
+        "role": "primary",
+        "displayName": "Dark Forest Green",
+        "tonalRamp": [
+          "oklch(15% 0.0630 157.1)",
+          "oklch(26% 0.0630 157.1)",
+          "oklch(38% 0.0630 157.1)",
+          "oklch(49% 0.0630 157.1)",
+          "oklch(61% 0.0630 157.1)",
+          "oklch(72% 0.0630 157.1)",
+          "oklch(84% 0.0630 157.1)",
+          "oklch(95% 0.0630 157.1)"
+        ]
+      },
+      "dark-accent-fg": {
+        "role": "primary",
+        "displayName": "Dark Action Foreground",
+        "tonalRamp": [
+          "oklch(15% 0.0300 157.4)",
+          "oklch(26% 0.0300 157.4)",
+          "oklch(38% 0.0300 157.4)",
+          "oklch(49% 0.0300 157.4)",
+          "oklch(61% 0.0300 157.4)",
+          "oklch(72% 0.0300 157.4)",
+          "oklch(84% 0.0300 157.4)",
+          "oklch(95% 0.0300 157.4)"
+        ]
+      },
+      "dark-accent-soft": {
+        "role": "primary",
+        "displayName": "Dark Soft Sage",
+        "tonalRamp": [
+          "oklch(15% 0.0449 155.5)",
+          "oklch(26% 0.0449 155.5)",
+          "oklch(38% 0.0449 155.5)",
+          "oklch(49% 0.0449 155.5)",
+          "oklch(61% 0.0449 155.5)",
+          "oklch(72% 0.0449 155.5)",
+          "oklch(84% 0.0449 155.5)",
+          "oklch(95% 0.0449 155.5)"
+        ]
+      },
+      "dark-accent-line": {
+        "role": "primary",
+        "displayName": "Dark Sage Line",
+        "tonalRamp": [
+          "oklch(15% 0.0553 155.8)",
+          "oklch(26% 0.0553 155.8)",
+          "oklch(38% 0.0553 155.8)",
+          "oklch(49% 0.0553 155.8)",
+          "oklch(61% 0.0553 155.8)",
+          "oklch(72% 0.0553 155.8)",
+          "oklch(84% 0.0553 155.8)",
+          "oklch(95% 0.0553 155.8)"
+        ]
+      },
+      "dark-bg": {
+        "role": "neutral",
+        "displayName": "Dark Warm Stone",
+        "tonalRamp": [
+          "oklch(15% 0.0154 165.9)",
+          "oklch(26% 0.0154 165.9)",
+          "oklch(38% 0.0154 165.9)",
+          "oklch(49% 0.0154 165.9)",
+          "oklch(61% 0.0154 165.9)",
+          "oklch(72% 0.0154 165.9)",
+          "oklch(84% 0.0154 165.9)",
+          "oklch(95% 0.0154 165.9)"
+        ]
+      },
+      "dark-surface": {
+        "role": "neutral",
+        "displayName": "Dark White Surface",
+        "tonalRamp": [
+          "oklch(15% 0.0204 162.7)",
+          "oklch(26% 0.0204 162.7)",
+          "oklch(38% 0.0204 162.7)",
+          "oklch(49% 0.0204 162.7)",
+          "oklch(61% 0.0204 162.7)",
+          "oklch(72% 0.0204 162.7)",
+          "oklch(84% 0.0204 162.7)",
+          "oklch(95% 0.0204 162.7)"
+        ]
+      },
+      "dark-surface-2": {
+        "role": "neutral",
+        "displayName": "Dark Mist Surface",
+        "tonalRamp": [
+          "oklch(15% 0.0230 162.7)",
+          "oklch(26% 0.0230 162.7)",
+          "oklch(38% 0.0230 162.7)",
+          "oklch(49% 0.0230 162.7)",
+          "oklch(61% 0.0230 162.7)",
+          "oklch(72% 0.0230 162.7)",
+          "oklch(84% 0.0230 162.7)",
+          "oklch(95% 0.0230 162.7)"
+        ]
+      },
+      "dark-line": {
+        "role": "neutral",
+        "displayName": "Dark Quiet Line",
+        "tonalRamp": [
+          "oklch(15% 0.0346 157.1)",
+          "oklch(26% 0.0346 157.1)",
+          "oklch(38% 0.0346 157.1)",
+          "oklch(49% 0.0346 157.1)",
+          "oklch(61% 0.0346 157.1)",
+          "oklch(72% 0.0346 157.1)",
+          "oklch(84% 0.0346 157.1)",
+          "oklch(95% 0.0346 157.1)"
+        ]
+      },
+      "dark-line-strong": {
+        "role": "neutral",
+        "displayName": "Dark Strong Line",
+        "tonalRamp": [
+          "oklch(15% 0.0401 160.1)",
+          "oklch(26% 0.0401 160.1)",
+          "oklch(38% 0.0401 160.1)",
+          "oklch(49% 0.0401 160.1)",
+          "oklch(61% 0.0401 160.1)",
+          "oklch(72% 0.0401 160.1)",
+          "oklch(84% 0.0401 160.1)",
+          "oklch(95% 0.0401 160.1)"
+        ]
+      },
+      "dark-text": {
+        "role": "neutral",
+        "displayName": "Dark Forest Ink",
+        "tonalRamp": [
+          "oklch(15% 0.0099 155.1)",
+          "oklch(26% 0.0099 155.1)",
+          "oklch(38% 0.0099 155.1)",
+          "oklch(49% 0.0099 155.1)",
+          "oklch(61% 0.0099 155.1)",
+          "oklch(72% 0.0099 155.1)",
+          "oklch(84% 0.0099 155.1)",
+          "oklch(95% 0.0099 155.1)"
+        ]
+      },
+      "dark-text-2": {
+        "role": "neutral",
+        "displayName": "Dark Secondary Ink",
+        "tonalRamp": [
+          "oklch(15% 0.0241 157.5)",
+          "oklch(26% 0.0241 157.5)",
+          "oklch(38% 0.0241 157.5)",
+          "oklch(49% 0.0241 157.5)",
+          "oklch(61% 0.0241 157.5)",
+          "oklch(72% 0.0241 157.5)",
+          "oklch(84% 0.0241 157.5)",
+          "oklch(95% 0.0241 157.5)"
+        ]
+      },
+      "dark-warn": {
+        "role": "semantic",
+        "displayName": "Dark Review Amber",
+        "tonalRamp": [
+          "oklch(15% 0.1299 77.3)",
+          "oklch(26% 0.1299 77.3)",
+          "oklch(38% 0.1299 77.3)",
+          "oklch(49% 0.1299 77.3)",
+          "oklch(61% 0.1299 77.3)",
+          "oklch(72% 0.1299 77.3)",
+          "oklch(84% 0.1299 77.3)",
+          "oklch(95% 0.1299 77.3)"
+        ]
+      },
+      "dark-warn-soft": {
+        "role": "semantic",
+        "displayName": "Dark Amber Wash",
+        "tonalRamp": [
+          "oklch(15% 0.0319 82.1)",
+          "oklch(26% 0.0319 82.1)",
+          "oklch(38% 0.0319 82.1)",
+          "oklch(49% 0.0319 82.1)",
+          "oklch(61% 0.0319 82.1)",
+          "oklch(72% 0.0319 82.1)",
+          "oklch(84% 0.0319 82.1)",
+          "oklch(95% 0.0319 82.1)"
+        ]
+      },
+      "dark-neg": {
+        "role": "semantic",
+        "displayName": "Dark Negative Red",
+        "tonalRamp": [
+          "oklch(15% 0.1559 26.0)",
+          "oklch(26% 0.1559 26.0)",
+          "oklch(38% 0.1559 26.0)",
+          "oklch(49% 0.1559 26.0)",
+          "oklch(61% 0.1559 26.0)",
+          "oklch(72% 0.1559 26.0)",
+          "oklch(84% 0.1559 26.0)",
+          "oklch(95% 0.1559 26.0)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "headline": {
+        "displayName": "Page Heading",
+        "purpose": "Discovery title, with 24px mobile size."
+      },
+      "title": {
+        "displayName": "Inspector Title",
+        "purpose": "Selected-candidate review heading."
+      },
+      "body": {
+        "displayName": "System UI Body",
+        "purpose": "Standard operator text; no webfont asset."
+      },
+      "label": {
+        "displayName": "Review Label",
+        "purpose": "Compact status labels."
+      },
+      "number": {
+        "displayName": "Financial Value",
+        "purpose": "Tabular figures; font-variant-numeric: tabular-nums."
+      }
+    },
+    "shadows": [
+      {
+        "name": "shared-low",
+        "value": "0 1px 2px rgba(20,22,26,.05), 0 1px 3px rgba(20,22,26,.04)",
+        "purpose": "Existing shared surface shadow; C candidate cards remain flat."
+      },
+      {
+        "name": "shared-large",
+        "value": "0 8px 24px rgba(20,22,26,.10), 0 2px 6px rgba(20,22,26,.06)",
+        "purpose": "Existing elevated surfaces."
+      },
+      {
+        "name": "dark-low",
+        "value": "0 1px 2px rgba(0,0,0,.4)",
+        "purpose": "Dark shared surface shadow."
+      },
+      {
+        "name": "dark-large",
+        "value": "0 12px 32px rgba(0,0,0,.5)",
+        "purpose": "Dark elevated surfaces."
+      }
+    ],
+    "motion": [
+      {
+        "name": "control",
+        "value": "background .12s, border-color .12s, color .12s",
+        "purpose": "Shared button state transitions."
+      },
+      {
+        "name": "candidate",
+        "value": "border-color .18s, background .18s",
+        "purpose": "Candidate hover; disabled under prefers-reduced-motion: reduce."
+      },
+      {
+        "name": "navigation",
+        "value": "background .1s",
+        "purpose": "Rail hover transition."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "desktop-grid",
+        "value": "1270px"
+      },
+      {
+        "name": "stack-inspector",
+        "value": "1000px"
+      },
+      {
+        "name": "mobile",
+        "value": "720px"
+      },
+      {
+        "name": "single-column",
+        "value": "420px"
+      }
+    ],
+    "previewNotes": "Tokens originate in a JS style string on [data-app], so snippets include literal fallbacks for a standalone shadow DOM. Ramp strips are synthesized documentation aids, not additional shipped theme tokens. Static samples are component previews, not saved records or live service states.",
+    "sources": [
+      "src/SmartStoreSellerOS.jsx",
+      "src/styles.css",
+      "src/dashboard/CandidateGallery.jsx",
+      "src/dashboard/DiscoveryWorkspace.jsx",
+      "PRODUCT.md",
+      "docs/design/c-image-review.md"
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Action",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Discovery action styling; this preview does not run research.",
+      "html": "<button type=\"button\" class=\"ds-control ds-primary\">발굴 실행</button>",
+      "css": ".ds-primary{font-family:ui-sans-serif, -apple-system, \"Pretendard\", \"Apple SD Gothic Neo\", system-ui, sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid transparent;border-radius:8px;font-weight:500;cursor:pointer;white-space:nowrap;transition:background .12s,border-color .12s,color .12s;min-height:48px;padding:0 24px;font-size:15px;background:var(--accent,#1E4D3D);color:var(--accent-fg,#FFFFFF);}.ds-primary:hover{filter:brightness(1.08);}.ds-primary:disabled{opacity:.42;cursor:not-allowed;}.ds-control:focus-visible{outline:2px solid var(--accent,#1E4D3D);outline-offset:3px;}"
+    },
+    {
+      "name": "Ghost Action",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Quiet refresh or reset action.",
+      "html": "<button type=\"button\" class=\"ds-control ds-ghost\">새로고침</button>",
+      "css": ".ds-ghost{font-family:ui-sans-serif, -apple-system, \"Pretendard\", \"Apple SD Gothic Neo\", system-ui, sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid transparent;border-radius:8px;font-weight:500;cursor:pointer;white-space:nowrap;transition:background .12s,border-color .12s,color .12s;height:40px;padding:0 12px;font-size:14px;background:transparent;color:var(--text-2,#526159);border-color:var(--line,#E0E6E1);}.ds-ghost:hover{background:var(--surface-2,#F2F5F1);color:var(--text,#182C25);}.ds-ghost:disabled{opacity:.42;cursor:not-allowed;}.ds-control:focus-visible{outline:2px solid var(--accent,#1E4D3D);outline-offset:3px;}"
+    },
+    {
+      "name": "Search Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Native stored-candidate search field.",
+      "html": "<label class=\"ds-search\"><svg viewBox=\"0 0 24 24\" width=\"17\" height=\"17\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"8\"/><path d=\"m21 21-4.35-4.35\"/></svg><input aria-label=\"저장 상품 검색\" placeholder=\"상품명, 원본명, 상품번호 검색\"></label>",
+      "css": ".ds-search{font-family:ui-sans-serif, -apple-system, \"Pretendard\", \"Apple SD Gothic Neo\", system-ui, sans-serif;display:flex;position:relative;align-items:center;min-width:150px;color:var(--text-2,#526159);}.ds-search svg{position:absolute;left:12px;pointer-events:none;}.ds-search input{font:inherit;font-size:13.5px;height:40px;padding:0 10px 0 38px;width:100%;border:1px solid var(--line,#E0E6E1);border-radius:8px;background:var(--surface,#FFFFFF);color:var(--text,#182C25);caret-color:var(--accent,#1E4D3D);}.ds-search input:focus{outline:none;border-color:var(--accent,#1E4D3D);box-shadow:0 0 0 3px var(--accent-soft,#E9F1EC);}"
+    },
+    {
+      "name": "Active Rail Item",
+      "kind": "nav",
+      "refersTo": "navigation-active",
+      "description": "Icon-over-label navigation selection.",
+      "html": "<button type=\"button\" class=\"ds-control ds-nav\" aria-current=\"page\"><svg viewBox=\"0 0 24 24\" width=\"21\" height=\"21\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"8\"/><path d=\"m21 21-4.35-4.35\"/></svg><span>상품 발굴</span></button>",
+      "css": ".ds-nav{font-family:ui-sans-serif, -apple-system, \"Pretendard\", \"Apple SD Gothic Neo\", system-ui, sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;min-height:68px;padding:10px 3px;width:80px;font-size:11px;font-weight:650;border:0;border-radius:12px;background:var(--accent-soft,#E9F1EC);color:var(--accent,#1E4D3D);cursor:pointer;transition:background .1s;}.ds-nav:hover{background:var(--accent-soft,#E9F1EC);}.ds-control:focus-visible{outline:2px solid var(--accent,#1E4D3D);outline-offset:3px;}"
+    },
+    {
+      "name": "Review Status",
+      "kind": "chip",
+      "refersTo": "candidate-status",
+      "description": "A passive hold/review badge.",
+      "html": "<span class=\"ds-status\">보류</span>",
+      "css": ".ds-status{font-family:ui-sans-serif, -apple-system, \"Pretendard\", \"Apple SD Gothic Neo\", system-ui, sans-serif;display:inline-flex;align-items:center;padding:4px 8px;border-radius:6px;background:var(--warn-soft,#FDF3E2);color:var(--warn,#9A6410);font-size:11px;font-weight:650;}"
+    },
+    {
+      "name": "Candidate Card — Missing Image",
+      "kind": "card",
+      "refersTo": "candidate-card",
+      "description": "Selected card using the real missing-image treatment; no fabricated product photo or financial result.",
+      "html": "<button type=\"button\" class=\"ds-control ds-card\" aria-pressed=\"true\"><span class=\"ds-photo\"><svg viewBox=\"0 0 24 24\" width=\"28\" height=\"28\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.3\" aria-hidden=\"true\"><path d=\"m3 3 18 18M21 15V5a2 2 0 0 0-2-2H9M3 9v10a2 2 0 0 0 2 2h14M3 15l4-4 10 10M14 14l1-1 6 6\"/><circle cx=\"15\" cy=\"8\" r=\"1\"/></svg><span>저장된 이미지가 없습니다</span></span><span class=\"ds-card-copy\">저장 후보</span><span class=\"ds-card-meta\">판매가 미확정</span></button>",
+      "css": ".ds-card{font-family:ui-sans-serif, -apple-system, \"Pretendard\", \"Apple SD Gothic Neo\", system-ui, sans-serif;display:flex;flex-direction:column;min-width:0;max-width:300px;width:100%;padding:9px;text-align:left;border:1px solid var(--line,#E0E6E1);border-radius:14px;background:var(--surface,#FFFFFF);color:var(--text,#182C25);cursor:pointer;transition:border-color .18s,background .18s;}.ds-card:hover{border-color:var(--accent-line,#A4C2B1);background:var(--surface-2,#F2F5F1);}.ds-card[aria-pressed=\"true\"]{border-color:var(--accent,#1E4D3D);outline:1px solid var(--accent,#1E4D3D);outline-offset:0;}.ds-photo{width:100%;aspect-ratio:1.45;border-radius:9px;background:var(--surface-2,#F2F5F1);display:grid;align-content:center;justify-items:center;gap:10px;overflow:hidden;color:var(--text-2,#526159);font-size:11px;}.ds-card-copy{padding:10px 3px 4px;font-size:14px;font-weight:650;line-height:1.5;}.ds-card-meta{padding:0 3px 4px;font-size:12px;color:var(--text-2,#526159);}.ds-card:focus-visible{outline:2px solid var(--accent,#1E4D3D);outline-offset:3px;}@media(prefers-reduced-motion:reduce){.ds-card{transition:none;}}"
+    },
+    {
+      "name": "Inspector Hold Notice",
+      "kind": "custom",
+      "refersTo": "candidate-inspector",
+      "description": "Inspector surface and the implemented unresolved-profitability warning.",
+      "html": "<aside class=\"ds-inspector\" aria-label=\"선택 상품 검토\"><h2>상품 검토</h2><div class=\"ds-hold\"><strong>수익성 확정 보류</strong><p>배송비·수요·판매 적합성 확인 전에는 확정하지 않습니다.</p></div><p class=\"ds-lock\">상품 등록·배송 신청 미실행</p></aside>",
+      "css": ".ds-inspector{font-family:ui-sans-serif, -apple-system, \"Pretendard\", \"Apple SD Gothic Neo\", system-ui, sans-serif;max-width:340px;padding:18px;border:1px solid var(--line,#E0E6E1);border-radius:14px;background:var(--surface,#FFFFFF);color:var(--text,#182C25);}.ds-inspector h2{font-size:16px;font-weight:650;margin:0 0 16px;}.ds-hold{padding:13px;border-radius:10px;background:var(--warn-soft,#FDF3E2);color:var(--warn,#9A6410);font-size:13px;}.ds-hold p{margin:5px 0 0;font-size:12px;line-height:1.6;}.ds-lock{font-size:11px;color:var(--text-2,#526159);margin:10px 0 0;text-align:center;}"
+    },
+    {
+      "name": "Evidence Disclosure",
+      "kind": "custom",
+      "refersTo": "disclosure",
+      "description": "Native progressive disclosure for existing review evidence.",
+      "html": "<details class=\"ds-details\"><summary>배송비 범위·옵션별 추정 근거</summary><p>추정 근거와 시나리오는 전체 조사·검토 기록에서 확인하세요. 확인되지 않은 값은 0원으로 처리하지 않습니다.</p></details>",
+      "css": ".ds-details{font-family:ui-sans-serif, -apple-system, \"Pretendard\", \"Apple SD Gothic Neo\", system-ui, sans-serif;font-size:12px;color:var(--text,#182C25);border-top:1px solid var(--line,#E0E6E1);padding-top:13px;max-width:360px;}.ds-details summary{cursor:pointer;}.ds-details summary:focus-visible{outline:2px solid var(--accent,#1E4D3D);outline-offset:3px;}.ds-details p{line-height:1.5;}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Procurement Workbench",
+    "overview": "A calm procurement workbench: warm stone grounds, white surfaces, and forest green for actions and selection. The system supports PC comparison of stored product evidence with standard controls and quiet borders.\n\nThe chosen C direction gives real product images room without turning the interface into a promotion. System fonts are intentional workhorse typography. Missing images and unresolved economics remain legible parts of the review.",
+    "keyCharacteristics": [
+      "Warm stone and white surfaces",
+      "Forest green action and selection",
+      "Actual stored imagery with explicit fallback",
+      "Compact evidence and aligned financial values"
+    ],
+    "rules": [
+      {
+        "name": "The Evidence Rule",
+        "body": "Image presence never implies usage rights, profitability, or transaction readiness.",
+        "section": "colors"
+      }
+    ],
+    "dos": [
+      "Do retain the shared theme variables for new surfaces and controls.",
+      "Do show stored image URLs with contain fitting and a visible missing-image fallback.",
+      "Do retain visible focus and tabular figures for financial comparison.",
+      "Do keep source-image provenance in candidate records and treat previews as internal review."
+    ],
+    "donts": [
+      "Don't replace absent source images with invented products or the generated mockup.",
+      "Don't use green to imply cleared profitability or permission to transact.",
+      "Don't substitute zero for unknown costs or describe contribution estimates as confirmed net profit.",
+      "Don't add a webfont dependency to reproduce the approved system stack."
+    ]
+  }
+}

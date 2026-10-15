@@ -14,37 +14,38 @@ import SavedCandidateCards from './dashboard/SavedCandidateCards.jsx';
 import EstimateProfileFields from './dashboard/EstimateProfileFields.jsx';
 import DiscoveryProgress from './dashboard/DiscoveryProgress.jsx';
 import CommerceConnection from './dashboard/CommerceConnection.jsx';
+import DiscoveryWorkspace from './dashboard/DiscoveryWorkspace.jsx';
 
 /* ============================================================================
    DESIGN TOKENS
-   방향: 브리프가 지정한 Linear / Vercel / Stripe 계열 미니멀 SaaS.
-   축: 중성 슬레이트 표면 + 단일 인디고 액센트 + 등급 전용 데이터 팔레트.
+   방향: 승인된 C 이미지형 — 이미지 중심 검토 공간과 포레스트 그린.
+   축: 웜 스톤 표면 + 그린 선택/액션 + 검토 상태 전용 의미 색상.
    숫자(금액·점수)는 tabular-nums 고정폭으로 세로 정렬을 맞춘다 —
    이 제품은 숫자를 비교하는 도구이므로 정렬이 곧 가독성이다.
 ============================================================================ */
 const TOKENS = `
 [data-app]{
-  --bg:#FBFBFC; --surface:#FFFFFF; --surface-2:#F6F7F9; --surface-3:#EFF1F4;
-  --line:#E4E7EC; --line-strong:#D3D8E0;
-  --text:#14161A; --text-2:#5B6470; --text-3:#8A929E;
-  --accent:#4A5FE7; --accent-fg:#FFFFFF; --accent-soft:#EDF0FE; --accent-line:#C7D0FB;
+  --bg:#F8F9F6; --surface:#FFFFFF; --surface-2:#F2F5F1; --surface-3:#E9EFEB;
+  --line:#E0E6E1; --line-strong:#BCCAC2;
+  --text:#182C25; --text-2:#526159; --text-3:#65736C;
+  --accent:#1E4D3D; --accent-fg:#FFFFFF; --accent-soft:#E9F1EC; --accent-line:#A4C2B1;
   --pos:#0E8A5F; --pos-soft:#E6F5EF;
   --neg:#C4362F; --neg-soft:#FCEDEC;
   --warn:#9A6410; --warn-soft:#FDF3E2;
-  --gS:#4A5FE7; --gA:#0E8A5F; --gB:#9A6410; --gC:#8A929E; --gD:#B0B6BF;
+  --gS:#1E4D3D; --gA:#0E8A5F; --gB:#9A6410; --gC:#65736C; --gD:#B0B6BF;
   --shadow:0 1px 2px rgba(20,22,26,.05), 0 1px 3px rgba(20,22,26,.04);
   --shadow-lg:0 8px 24px rgba(20,22,26,.10), 0 2px 6px rgba(20,22,26,.06);
-  --radius:8px;
+  --radius:12px;
 }
 [data-app][data-theme="dark"]{
-  --bg:#0B0C0E; --surface:#131519; --surface-2:#191C21; --surface-3:#21252B;
-  --line:#25292F; --line-strong:#343A42;
-  --text:#EDEFF2; --text-2:#98A1AD; --text-3:#6B747F;
-  --accent:#7E8DF5; --accent-fg:#0B0C0E; --accent-soft:#1B1F33; --accent-line:#2E3760;
+  --bg:#111A16; --surface:#17231D; --surface-2:#1E2C25; --surface-3:#283C31;
+  --line:#314639; --line-strong:#4B6657;
+  --text:#EDF4EF; --text-2:#B2C3B8; --text-3:#A0B4A7;
+  --accent:#A4D2B5; --accent-fg:#13241A; --accent-soft:#233E2D; --accent-line:#496D56;
   --pos:#3DBE8B; --pos-soft:#12241D;
   --neg:#F0736A; --neg-soft:#2A1616;
   --warn:#D9A03F; --warn-soft:#261D0C;
-  --gS:#7E8DF5; --gA:#3DBE8B; --gB:#D9A03F; --gC:#6B747F; --gD:#4A5159;
+  --gS:#A4D2B5; --gA:#3DBE8B; --gB:#D9A03F; --gC:#A0B4A7; --gD:#4A5159;
   --shadow:0 1px 2px rgba(0,0,0,.4); --shadow-lg:0 12px 32px rgba(0,0,0,.5);
 }
 [data-app]{
@@ -958,6 +959,8 @@ function Discovery() {
     ["수집", 10240, 100], ["스크리닝", 1180, 11.5], ["상세수집", 1142, 11.2],
     ["마진통과", 312, 3.0], ["경쟁분석", 312, 3.0], ["리스크", 289, 2.8], ["추천", 6, 0.06],
   ];
+
+  if(cloud)return <DiscoveryWorkspace/>;
 
   return (
     <div className="fade" style={{ display: "flex", flexDirection: "column", gap: 18 }}>
@@ -2358,7 +2361,7 @@ function Settings() {
 ============================================================================ */
 const NAV_ITEMS = [
   ["dashboard", "대시보드", LayoutDashboard],
-  ["discovery", "발굴", Search],
+  ["discovery", "상품 발굴", Search],
   ["pending", "등록 대기", ClipboardCheck],
   ["registered", "판매 중 상품", Store],
   ["orders", "주문", ShoppingCart],
@@ -2393,27 +2396,27 @@ function Shell() {
   const activeNav = ["product", "gptpage"].includes(route.name) ? "discovery" : route.name;
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh" }}>
+    <div className="seller-shell" style={{ display: "flex", minHeight: "100vh" }}>
       {/* Sidebar */}
       {sidebarOpen && (
-        <aside style={{
-          width: 208, flexShrink: 0, borderRight: "1px solid var(--line)", background: "var(--surface)",
+        <aside className="shell-rail" aria-label="주 메뉴" style={{
+          width: 92, flexShrink: 0, borderRight: "1px solid var(--line)", background: "var(--surface)",
           padding: 12, display: "flex", flexDirection: "column", position: "sticky", top: 0, height: "100vh",
         }}>
-          <button onClick={() => nav("dashboard")} className="flex items-center"
+          <button aria-label="Seller OS 대시보드" onClick={() => nav("dashboard")} className="rail-brand flex items-center"
             style={{ gap: 8, padding: "4px 6px 14px", background: "none", border: "none", cursor: "pointer", textAlign: "left" }}>
             <div style={{ width: 24, height: 24, borderRadius: 6, background: "var(--accent)", display: "grid", placeItems: "center", flexShrink: 0 }}>
               <Layers size={13} strokeWidth={2.3} style={{ color: "var(--accent-fg)" }} />
             </div>
-            <div style={{ minWidth: 0 }}>
+            <div className="rail-brand-text" style={{ minWidth: 0 }}>
               <div style={{ fontSize: 12.5, fontWeight: 650, letterSpacing: "-.01em", color: "var(--text)", whiteSpace: "nowrap" }}>AI Seller OS</div>
               <div className="t3" style={{ fontSize: 10 }}>DelightFilm</div>
             </div>
           </button>
 
-          <nav style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+          <nav aria-label="Seller OS 메뉴" style={{ display: "flex", flexDirection: "column", gap: 1 }}>
             {NAV_ITEMS.map(([key, label, Icon]) => (
-              <button key={key} className="navitem" data-on={activeNav === key ? "1" : "0"} onClick={() => nav(key)}>
+              <button key={key} className="navitem" aria-current={activeNav===key?'page':undefined} data-on={activeNav === key ? "1" : "0"} onClick={() => nav(key)}>
                 <Icon size={15} strokeWidth={1.9} style={{ flexShrink: 0 }} />
                 <span style={{ flex: 1 }}>{label}</span>
                 {badge[key] > 0 && (
@@ -2428,7 +2431,7 @@ function Shell() {
           </nav>
 
           <div style={{ marginTop: "auto" }}>
-            <div className="surf-2" style={{ borderRadius: 6, padding: 10, marginBottom: 8 }}>
+            <div className="rail-budget surf-2" style={{ borderRadius: 6, padding: 10, marginBottom: 8 }}>
               <div className="flex items-center justify-between" style={{ marginBottom: 6 }}>
                 <span className="eyebrow" style={{ fontSize: 10 }}>오늘 예산</span>
                 <span className="num t3" style={{ fontSize: 10.5 }}>{workflow.config.mode==='cloud'?'미연동':`${Math.round((spendTotal/state.settings.dailyBudget)*100)}%`}</span>
@@ -2438,7 +2441,7 @@ function Shell() {
               </div>
               <div className="num t2" style={{ fontSize: 11 }}>{workflow.config.mode==='cloud'?'—':`${KRW(spendTotal)} / ${KRW(state.settings.dailyBudget)}`}</div>
             </div>
-            <button className="navitem" onClick={() => workflow.config.mode==='cloud'?workflow.signOut():dispatch({ type: "LOGOUT" })}>
+            <button className="navitem rail-account" onClick={() => workflow.config.mode==='cloud'?workflow.signOut():dispatch({ type: "LOGOUT" })}>
               <div style={{ width: 20, height: 20, borderRadius: 10, background: "var(--surface-3)", display: "grid", placeItems: "center", fontSize: 9.5, fontWeight: 700, flexShrink: 0 }}>운</div>
               <span style={{ flex: 1, fontSize: 12.5 }}>{workflow.config.mode==='cloud'?'로그아웃':'운영자'}</span>
               <ChevronRight size={13} />
@@ -2449,13 +2452,14 @@ function Shell() {
 
       {/* Main */}
       <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
-        <header className="flex items-center justify-between" style={{
-          height: 48, padding: "0 20px", borderBottom: "1px solid var(--line)",
+        <header className="shell-header flex items-center justify-between" style={{
+          height: 64, padding: "0 24px", borderBottom: "1px solid var(--line)",
           background: "var(--surface)", position: "sticky", top: 0, zIndex: 20, gap: 12,
         }}>
           <div className="flex items-center" style={{ gap: 10, minWidth: 0 }}>
-            <Btn icon={sidebarOpen ? PanelLeftClose : PanelLeft} variant="quiet" onClick={() => dispatch({ type: "SIDEBAR" })} />
-            <span className="t3" style={{ fontSize: 12.5, whiteSpace: "nowrap" }}>
+            <button type="button" className="btn btn-quiet shell-toggle" aria-label={sidebarOpen?'주 메뉴 접기':'주 메뉴 펼치기'} onClick={()=>dispatch({type:'SIDEBAR'})}>{sidebarOpen?<PanelLeftClose size={18}/>:<PanelLeft size={18}/>}</button>
+            <button type="button" className="shell-wordmark" onClick={()=>nav('discovery')}>Seller OS <span>DelightFilm</span></button>
+            <span className="shell-route t3" style={{ fontSize: 12.5, whiteSpace: "nowrap" }}>
               {NAV_ITEMS.find(([k]) => k === activeNav)?.[1]}
               {route.name === "product" && " / 상품 분석"}
               {route.name === "gptpage" && " / 상세페이지"}
@@ -2467,11 +2471,11 @@ function Shell() {
                 <AlertTriangle size={11} /> 발주 실패 {orderIssues}
               </button>
             )}
-            <Btn icon={state.theme === "light" ? Moon : Sun} variant="quiet" onClick={() => dispatch({ type: "THEME" })} />
+            <button type="button" className="btn btn-quiet theme-toggle" aria-label={state.theme==='light'?'다크 모드로 전환':'라이트 모드로 전환'} onClick={()=>dispatch({type:'THEME'})}>{state.theme==='light'?<Moon size={18}/>:<Sun size={18}/>}</button>
           </div>
         </header>
 
-        <main style={{ padding: 20, flex: 1, maxWidth: 1240, width: "100%" }}>{screen()}</main>
+        <main className="seller-main" style={{ padding: 28, flex: 1, width: "100%" }}>{screen()}</main>
       </div>
     </div>
   );
@@ -2483,7 +2487,7 @@ function Shell() {
 export default function App() {
   const workflow=useWorkflow();
   const cloud=workflow.config.mode==='cloud';
-  const [state, dispatch] = useReducer(reducer, {...initialState,...(cloud?{cloudMode:true,products:[],orders:[],spend:{ai:0,image:0,scrape:0}}:{})});
+  const [state, dispatch] = useReducer(reducer, {...initialState,...(cloud?{cloudMode:true,route:{name:'discovery',params:{}},products:[],orders:[],spend:{ai:0,image:0,scrape:0}}:{})});
   const ctx = useMemo(() => ({ state, dispatch }), [state]);
 
   return (

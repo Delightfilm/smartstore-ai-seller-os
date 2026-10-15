@@ -41,7 +41,7 @@ export default function PurchaseAgencyPanel({inspection}){
     handledInspection.current=inspection;
     if(dirty){setMessage('저장하지 않은 검토 내용이 있습니다. 먼저 저장하거나 변경 취소 후 후보를 다시 선택하세요.');return;}
     setCandidate(saved);setReviewDirty(false);
-    if(panelElement.current){panelElement.current.open=true;panelElement.current.scrollIntoView({block:'start'});}
+    if(panelElement.current){panelElement.current.open=true;panelElement.current.querySelector('summary')?.focus({preventScroll:true});panelElement.current.scrollIntoView({block:'start'});}
   },[inspection,records,dirty]);
   if(!import.meta.env.DEV&&!cloud)return null;
   const run=async fn=>{setBusy(true);setMessage('처리 중…');try{await fn();setMessage('작업 완료 · 실제 상품은 등록하지 않았습니다.');}catch(e){setMessage(e.name==='TimeoutError'?'요청 시간 초과. 후보를 다시 불러와 저장 여부를 확인하세요.':e.message);}finally{setBusy(false);}};
