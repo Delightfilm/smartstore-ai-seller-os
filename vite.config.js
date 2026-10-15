@@ -8,6 +8,7 @@ import { WorkflowStore } from "./server/workflowStore.js";
 import { seedP2013Research } from "./server/p2013Research.js";
 import { resolveWorkflowConfig } from './src/data/workflowConfig.js';
 import { researchWorkerPlugin } from './server/researchWorker.js';
+import { commerceLocalPlugin } from './server/commerce/localAdapter.js';
 
 const STATE_FILE = ".preview-sync-state.json";
 
@@ -127,6 +128,8 @@ export default defineConfig(({ command, mode }) => {
   if (command === "serve") {
     if(env.VITE_WORKFLOW_MODE==='cloud'){
       plugins.push(researchWorkerPlugin({...resolveWorkflowConfig({...env,MODE:mode,PROD:false}),workspaceId:env.VITE_SELLER_OS_WORKSPACE_ID}));
+      const commerceConfig=resolveWorkflowConfig({...env,MODE:mode,PROD:false});
+      plugins.push(commerceLocalPlugin({workspaceId:env.VITE_SELLER_OS_WORKSPACE_ID,clientId:env.NAVER_COMMERCE_CLIENT_ID,clientSecret:env.NAVER_COMMERCE_CLIENT_SECRET,supabaseUrl:commerceConfig.url,publishableKey:commerceConfig.publishableKey}));
     }
     if(env.VITE_WORKFLOW_MODE==='local'){
       plugins.push(local1688CollectorPlugin());
