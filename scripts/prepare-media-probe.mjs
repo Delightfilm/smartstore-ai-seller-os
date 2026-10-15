@@ -1,0 +1,10 @@
+import { writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { fixtures, pressurePng } from './probe-media-codecs.mjs';
+const values = fixtures.map(([mime, encoded, width, height]) => ({ mime, bytes: Buffer.from(encoded,'base64'), width, height }));
+values.push({ mime: 'image/png', bytes: pressurePng(), width: 2000, height: 4000 });
+let source = '// Generated self-made TEST_ONLY codec startup fixtures, never product/GPT images.\nexport const probeFixtures = [\n';
+for (const f of values) source += ` ${JSON.stringify({ mime: f.mime, width: f.width, height: f.height, sha256: createHash('sha256').update(f.bytes).digest('hex') }).slice(0,-1)},bytes:Uint8Array.from(atob('${f.bytes.toString('base64')}'),c=>c.charCodeAt(0))},\n`;
+source += '];\n';
+await writeFile(new URL('../supabase/functions/seller-os-media/probeFixtures.js',import.meta.url),source);
+console.log(`Generated own technical probe fixtures: ${values.length}, ${Buffer.byteLength(source)} source bytes; no user files.`);

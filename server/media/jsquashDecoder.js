@@ -16,21 +16,27 @@ if (typeof globalThis.ImageData === 'undefined') {
 // jSquash modules are singletons; serialize across factory instances as well.
 let chain = Promise.resolve();
 let initialized;
+let decodeWarning = false;
 export function createJsquashDecoder({ wasmBytes }) {
   return { decode(bytes, mime) {
     const meta = inspectImage(bytes, mime);
     if (meta.width * meta.height > MEDIA_LIMITS.decodePixels) return Promise.reject(Object.assign(new Error('이미지를 8MP 이하로 분할해 주세요.'), { code: 'MEDIA_DECODE_LIMIT' }));
     const work = chain.then(async () => {
       initialized ??= Promise.all([
-        WebAssembly.compile(wasmBytes.jpeg).then(module => initJpeg(module)),
+        WebAssembly.compile(wasmBytes.jpeg).then(module => initJpeg(module, { printErr: () => { decodeWarning = true; } })),
         initPng(wasmBytes.png),
         WebAssembly.compile(wasmBytes.webp).then(module => initWebp(module)),
       ]);
       await initialized;
+      decodeWarning = false;
       const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
       // Validate encoded SOF dimensions, not EXIF-rotated presentation. Original
       // bytes/EXIF are retained; the browser remains responsible for display.
-      return mime === 'image/png' ? png(buffer) : mime === 'image/jpeg' ? jpeg(buffer, { preserveOrientation: false }) : webp(buffer);
+      const result = await (mime === 'image/png' ? png(buffer) : mime === 'image/jpeg' ? jpeg(buffer, { preserveOrientation: false }) : webp(buffer));
+      // libjpeg otherwise silently repairs truncated entropy streams. Never
+      // publish the recovery raster or raw decoder warning text as success.
+      if (decodeWarning) throw Object.assign(new Error('MEDIA_IMAGE_INVALID'), { code: 'MEDIA_IMAGE_INVALID' });
+      return result;
     });
     chain = work.catch(() => {}); return work;
   } };

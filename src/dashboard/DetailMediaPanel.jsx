@@ -23,11 +23,12 @@ export default function DetailMediaPanel({ candidate, onClose }) {
  const panelEdit = (index, patch) => edit({ panels: draft.panels.map((p, i) => i === index ? { ...p, ...patch } : p) });
  const move = (index, offset) => { const panels = [...draft.panels]; [panels[index], panels[index + offset]] = [panels[index + offset], panels[index]]; edit({ panels }); };
  const choose = async e => {
+  const capturedController = controller.current;
   const files = Array.from(e.target.files); e.target.value = ''; setFileError('');
   try {
    for (const file of files) { if (file.size > 4194304 || !['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) throw new Error('4MiB 이하 PNG/JPEG/WebP만 선택하세요.'); const image = await createImageBitmap(file); const pixels = image.width * image.height; image.close(); if (pixels > 8000000) throw new Error('8MP 이하 패널로 분할해 주세요.'); }
-   controller.current?.selectFiles(files);
-  } catch (error) { setFileError(error.message || '이미지 파일을 확인해 주세요.'); }
+   if (controller.current === capturedController) capturedController?.selectFiles(files);
+  } catch (error) { if (controller.current === capturedController) setFileError(error.message || '이미지 파일을 확인해 주세요.'); }
  };
  return <dialog ref={dialog} className="detail-media-dialog" aria-labelledby="detail-media-title" onCancel={e => { e.preventDefault(); close(); }}>
   <header className="detail-media-heading"><div><h2 id="detail-media-title">완성 이미지·상세페이지</h2><p>{candidate.title} · 상품 {candidate.id}</p></div><button className="btn btn-ghost" type="button" aria-label="편집 닫기" onClick={close}><X size={20}/></button></header>
@@ -36,6 +37,7 @@ export default function DetailMediaPanel({ candidate, onClose }) {
   <p role="status" className="detail-media-message">{state?.message || (state?.busy ? '서버 상태 확인 중…' : draft ? `초안 r${draft.revision} · ${state.dirty ? '미저장 변경 있음' : '서버 조회 기준'} · ${draft.review.status === 'REVIEWED_INTERNAL' && !state.stale ? '내부 검수 완료 · 판매 승인 아님' : '내부 검수 필요'}` : '비공개 저장소 연결 확인 중')}</p>
   {!draft && !state?.busy && <button type="button" className="btn btn-ghost" onClick={() => controller.current.load(state.scope, candidate.revision)}>연결 다시 확인</button>}
   {draft && <>
+   {(state.conflict || state.stale) && <div className="detail-media-close-confirm"><p>저장 당시 후보 근거와 현재 근거가 다릅니다. 기존 카피를 유지하고 검수 항목을 초기화해 재검토할 수 있습니다.</p><button type="button" className="btn btn-ghost" disabled={state.busy} onClick={() => controller.current.rebase()}>최신 후보 근거로 재검토 시작</button></div>}
    <div className="detail-media-budget"><p>보관 파일 {state.assets.length}/20 · {((state.budget?.storageUsed || 0) / 1048576).toFixed(2)}MiB / 64MiB</p><p>{state.budget?.enabled && new Date(state.budget.enabledUntil) > new Date() ? `무료 확인 유효: ${new Date(state.budget.enabledUntil).toLocaleString('ko-KR')}` : '무료 사용량 재확인 전 업로드·이미지 조회 비활성'}</p></div>
    <div className="detail-media-body"><div className="detail-media-editor">
     <fieldset disabled={locked}><legend>초안 내용</legend><label>한국어 제목<input className="inp" maxLength={200} value={draft.title} onChange={e => edit({ title: e.target.value })}/></label><label>소개<textarea className="inp" maxLength={4000} rows={3} value={draft.intro} onChange={e => edit({ intro: e.target.value })}/></label></fieldset>

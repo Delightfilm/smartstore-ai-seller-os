@@ -22,11 +22,23 @@ export function createDetailMediaController({ client, onState, createObjectURL =
   const api = {
     async load(scope, candidateRevision) {
       if (disposed) return;
-      if (state.dirty && state.scope?.offerId === scope.offerId && state.draft?.sourceCandidateRevision !== candidateRevision) { emit({ conflict: true, message: messages.REVISION_CONFLICT }); return; }
+      if (state.dirty && state.scope?.offerId === scope.offerId && state.draft?.sourceCandidateRevision !== candidateRevision) { epoch++; client.abort(); emit({ conflict: true, busy: false, message: messages.REVISION_CONFLICT + ' 진행 중 요청은 이미 서버에 저장됐을 수 있습니다.' }); return; }
       const captured = ++epoch; client.abort(); cleanup(); pendingSave = null;
       emit({ scope: { ...scope }, draft: null, assets: [], selectedFiles: [], dirty: false, contentDirty: false, busy: true, conflict: false, uncertain: false, message: '', budget: null });
       try { const snapshot = await client.list(scope); if (current(captured)) { apply(snapshot); if (snapshot.stale || snapshot.candidateRevision !== candidateRevision) emit({ conflict: true, message: messages.REVISION_CONFLICT }); } }
       catch (e) { if (current(captured)) report(e); } finally { if (current(captured)) emit({ busy: false }); }
+    },
+    async rebase() {
+      if (disposed || state.busy || !state.draft || !state.scope) return false;
+      const captured = ++epoch; client.abort(); emit({ busy: true });
+      try {
+        const latest = await client.list(state.scope); if (!current(captured)) return false;
+        if (state.contentDirty && latest.draft.revision !== state.draft.revision) { emit({ conflict: true, message: '다른 편집 내용이 저장됐습니다. 로컬 카피를 복사한 뒤 닫고 다시 열어 비교하세요.' }); return false; }
+        const content = state.contentDirty ? copyInput(state.draft) : copyInput(latest.draft);
+        const review = { ...content.review, status: 'REVIEW_REQUIRED', checks: Object.fromEntries(Object.keys(content.review.checks).map(k => [k, false])) };
+        pendingSave = null;
+        emit({ ...latest, draft: { ...latest.draft, ...content, sourceCandidateRevision: latest.candidateRevision, review }, stale: false, conflict: false, uncertain: false, dirty: true, contentDirty: true, message: '최신 후보 근거로 재검토를 시작했습니다. 카피는 유지하고 검수 확인은 해제했습니다. 초안을 먼저 저장하세요.' }); return true;
+      } catch (e) { if (current(captured)) report(e); return false; } finally { if (current(captured)) emit({ busy: false }); }
     },
     edit(patch) {
       if (disposed || state.busy || !state.draft || state.conflict || state.uncertain) return;

@@ -33,3 +33,19 @@ test('file choice sends nothing; double-submit and uncertain retries preserve on
   await Promise.all([c.uploadSelected(), c.uploadSelected()]); assert.equal(calls, 1); assert.equal(state().selectedFiles.length, 1);
   await c.uploadSelected(); assert.equal(ids[0], ids[1]); assert.equal(state().selectedFiles.length, 0);
 });
+
+test('stale source has explicit re-review path preserving copy but clearing prior checks', async () => {
+  const original = snapshot(); original.stale = true; original.candidateRevision = 5; original.draft.review = { ...original.draft.review, status: 'REVIEW_REQUIRED' };
+  const { c, state } = setup({ list: async () => original }); await c.load(scope, 5);
+  assert.equal(typeof c.rebase, 'function'); await c.rebase();
+  assert.equal(state().conflict, false); assert.equal(state().draft.title, '메모함'); assert.equal(state().draft.sourceCandidateRevision, 5);
+  assert.equal(state().contentDirty, true); assert.ok(Object.values(state().draft.review.checks).every(v => v === false));
+});
+test('late upload success cannot clear a newly observed source conflict', async () => {
+  let resolve;
+  const { c, state } = setup({ upload: () => new Promise(r => { resolve = r; }) });
+  await c.load(scope, 4); c.selectFiles([new File(['x'], 'gpt.png', { type: 'image/png' })]);
+  const p = c.uploadSelected(); await c.load(scope, 5); assert.equal(state().conflict, true);
+  resolve(snapshot()); await p;
+  assert.equal(state().conflict, true); assert.equal(state().busy, false); assert.notEqual(state().message, '선택한 파일을 비공개 클라우드에 저장했습니다.');
+});

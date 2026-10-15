@@ -118,7 +118,7 @@ BEGIN
  SELECT * INTO old FROM seller_os_private.media_requests WHERE workspace_id=p_workspace AND request_id=p_request;
  IF FOUND THEN
   IF old.actor_id<>p_actor OR old.offer_id<>p_offer OR old.kind<>'upload' OR old.fingerprint<>p_fingerprint THEN RAISE EXCEPTION 'REQUEST_REUSED' USING ERRCODE='22023'; END IF;
-  IF old.result IS NOT NULL THEN RETURN jsonb_build_object('committed',true,'snapshot',old.result); END IF;
+  IF old.result IS NOT NULL THEN RETURN jsonb_build_object('committed',true,'snapshot',public.seller_os_media_snapshot(p_workspace,p_actor,p_offer)); END IF;
   SELECT * INTO a FROM public.seller_os_detail_assets WHERE id=old.asset_id;
   PERFORM seller_os_private.media_charge_read(p_workspace,a.byte_length::bigint*2);
   RETURN jsonb_build_object('committed',false,'existing',true,'assetId',a.id,'path',a.object_path,'meta',a.meta);
@@ -152,7 +152,7 @@ BEGIN
  SELECT * INTO r FROM seller_os_private.media_requests WHERE workspace_id=p_workspace AND request_id=p_request;
  IF r.request_id IS NULL OR r.actor_id IS DISTINCT FROM p_actor OR r.kind<>'upload' THEN RAISE EXCEPTION 'MEDIA_FORBIDDEN' USING ERRCODE='42501'; END IF;
  PERFORM seller_os_private.media_guard(p_workspace,p_actor,r.offer_id);
- IF r.result IS NOT NULL THEN RETURN r.result; END IF;
+ IF r.result IS NOT NULL THEN RETURN public.seller_os_media_snapshot(p_workspace,p_actor,r.offer_id); END IF;
  PERFORM seller_os_private.media_guard(p_workspace,p_actor,r.offer_id,r.candidate_revision,r.detail_revision);
  -- Recheck lease, even if the upload began before expiry. No double read charge.
  PERFORM seller_os_private.media_charge_read(p_workspace,0);
@@ -178,7 +178,7 @@ BEGIN
  SELECT * INTO r FROM seller_os_private.media_requests WHERE workspace_id=p_workspace AND request_id=p_request;
  IF FOUND THEN
   IF r.actor_id<>p_actor OR r.offer_id<>p_offer OR r.kind<>'save' OR r.fingerprint<>p_fingerprint THEN RAISE EXCEPTION 'REQUEST_REUSED' USING ERRCODE='22023'; END IF;
-  RETURN r.result;
+  RETURN public.seller_os_media_snapshot(p_workspace,p_actor,p_offer);
  END IF;
  PERFORM seller_os_private.media_guard(p_workspace,p_actor,p_offer,p_candidate_revision,p_detail_revision);
  IF jsonb_typeof(p_draft) IS DISTINCT FROM 'object' OR NOT p_draft ?& ARRAY['title','intro','panels','review'] OR (p_draft-ARRAY['title','intro','panels','review'])<>'{}'::jsonb OR octet_length(p_draft::text)>65536

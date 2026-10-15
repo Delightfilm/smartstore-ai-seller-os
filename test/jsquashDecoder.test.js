@@ -46,3 +46,12 @@ test('JPEG EXIF rotation is validated in encoded coordinates without rejecting o
   assert.equal(meta.width, 2); assert.equal(meta.height, 3);
   assert.equal(meta.sha256, createHash('sha256').update(bytes).digest('hex'));
 });
+
+test('JPEG decoder corruption recovery warnings must reject incomplete entropy data', async () => {
+  const encoder = await import('@jsquash/jpeg/encode.js');
+  await encoder.init(await WebAssembly.compile(await readFile(new URL('../node_modules/@jsquash/jpeg/codec/enc/mozjpeg_enc.wasm', import.meta.url))));
+  const source = new Uint8Array(await encoder.default({ width: 64, height: 64, data: new Uint8ClampedArray(64 * 64 * 4).fill(100) }));
+  const sos = source.findIndex((b, i) => b === 255 && source[i + 1] === 218);
+  const broken = Buffer.concat([source.subarray(0, sos + 20), Buffer.from([255, 217])]);
+  await assert.rejects(validateUploadedImage(broken, 'image/jpeg', createJsquashDecoder({ wasmBytes })), { code: 'MEDIA_IMAGE_INVALID' });
+});

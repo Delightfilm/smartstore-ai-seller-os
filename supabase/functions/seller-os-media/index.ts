@@ -5,10 +5,16 @@ import { createMediaHandler } from '../../../server/media/handler.js';
 import { validateUploadedImage } from '../../../server/media/imageValidation.js';
 import { createJsquashDecoder } from '../../../server/media/jsquashDecoder.js';
 import { wasmBytes } from './codecBytes.js';
+import { probeFixtures } from './probeFixtures.js';
+import { probeMediaRuntime } from '../../../server/media/runtimeProbe.js';
 const url = Deno.env.get('SUPABASE_URL')!;
 const publicKey = Deno.env.get('SUPABASE_ANON_KEY')!;
 const writer = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false, autoRefreshToken: false } });
 const decoder = createJsquashDecoder({ wasmBytes });
+// No DB/object writes or user payloads. Every cold start fails closed unless
+// the actual hosted runtime fully decodes the three formats and 8MP fixture.
+const runtime = await probeMediaRuntime({ fixtures: probeFixtures, validate: (bytes: Uint8Array, mime: string) => validateUploadedImage(bytes, mime, decoder) });
+console.info(JSON.stringify({ event: 'seller_os_media_runtime_probe', ...runtime }));
 const objects = writer.storage.from('seller-os-detail-media');
 const fail = (code: string, status = 503) => Object.assign(new Error(code), { code, status });
 Deno.serve(createMediaHandler({

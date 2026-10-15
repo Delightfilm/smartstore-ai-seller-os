@@ -36,5 +36,7 @@ test('real handler+WASM+local SQL store upload/read/save/replay and source chang
   // Source revision changes, but existing media/objects are retained.
   await db.exec(`UPDATE public.seller_os_candidates SET revision=5,data=jsonb_set(data,'{revision}','5') WHERE offer_id='${offerId}';`);
   const latest = await store.list(offerId); assert.equal(latest.stale, true); assert.equal(latest.draft.review.status, 'REVIEW_REQUIRED'); assert.equal(objects.size, 1);
+  response = await handler(upload()); const replay = await response.json();
+  assert.equal(response.status, 200); assert.equal(replay.candidateRevision, 5); assert.equal(replay.stale, true); assert.equal(replay.draft.revision, 2); assert.equal(replay.draft.intro, 'TEST_ONLY 카피'); assert.equal(writes, 1);
  } finally { await db.close(); }
 });
