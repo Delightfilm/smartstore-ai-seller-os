@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { lazy, Suspense, useRef, useState } from 'react';
 import { AlertTriangle, ArrowRight, ImageOff, Package } from 'lucide-react';
 import { reviewLabels } from '../researchReview.js';
 import DiscoveryEstimatePanel from './DiscoveryEstimatePanel.jsx';
 import ImageKitExport from './ImageKitExport.jsx';
 import DetailMediaPanel from './DetailMediaPanel.jsx';
 import { useWorkflow } from '../auth/AuthProvider.jsx';
+const ConceptWorkbench=lazy(()=>import('./ConceptWorkbench.jsx'));
 
 export const money = value => value == null ? '미확정' : `${value.toLocaleString('ko-KR')}원`;
 const range = values => !values ? '비용 미확정' : values[0]===values[1] ? money(values[0]) : `${money(values[0])} ~ ${money(values[1])}`;
@@ -20,8 +21,13 @@ export default function CandidateGallery({views,onReview}) {
  const {user}=useWorkflow();
  const [selectedId,setSelectedId]=useState('816692570613');
  const [mediaCandidate,setMediaCandidate]=useState(null);
+ const [conceptOpen,setConceptOpen]=useState(false),[artSelection,setArtSelection]=useState(null);
+ const conceptTrigger=useRef(null);
  const selected=views.find(c=>c.id===selectedId)||views[0];
- return <div className="candidate-workspace" data-testid="saved-discovery-candidates">
+ const selectionKey=`${user?.id||'local'}:${selected?.id}:${selected?.revision}`;
+ const artChoice=artSelection?.key===selectionKey?artSelection.choice:undefined;
+ const exportControl=selected&&<ImageKitExport key={selectionKey} selected={selected} artChoice={artChoice}/>;
+ return <div className="candidate-workspace" data-concept-open={conceptOpen} data-testid="saved-discovery-candidates">
   <div className="candidate-grid" aria-label="저장된 상품 후보">
    {views.map(c=><button key={c.id} type="button" className="candidate-card" aria-pressed={selected?.id===c.id} onClick={()=>setSelectedId(c.id)}>
     <div className="candidate-photo"><CandidateImage key={c.imageUrl||c.id} candidate={c}/><span className="candidate-status">{reviewLabels[c.status]||'검토 필요'}</span></div>
@@ -36,10 +42,12 @@ export default function CandidateGallery({views,onReview}) {
    <section className="inspector-reasons"><h3>보류·검토 사유</h3><ul>{selected.reasons.slice(0,4).map(reason=><li key={reason}>{reason}</li>)}</ul>{selected.reasons.length>4&&<p className="t2">외 {selected.reasons.length-4}개 사유 · 전체 검토에서 확인</p>}</section>
    <details className="inspector-estimate"><summary>배송비 범위·옵션별 추정 근거</summary>{selected.estimate?<DiscoveryEstimatePanel estimate={selected.estimate} compact/>:<p>추정 근거와 시나리오는 전체 조사·검토 기록에서 확인하세요. 확인되지 않은 값은 0원으로 처리하지 않습니다.</p>}</details>
    <button type="button" className="btn btn-primary review-record-button" onClick={()=>onReview(selected.id)}>전체 조사·검토 기록 <ArrowRight size={16}/></button>
-   <ImageKitExport key={`${user?.id||'local'}:${selected.id}:${selected.revision}`} selected={selected}/>
+   <button ref={conceptTrigger} type="button" className="btn btn-ghost detail-media-open" aria-expanded={conceptOpen} onClick={()=>setConceptOpen(v=>!v)}>상세페이지 콘셉트 비교 · 가이드 v3</button>
+   {!conceptOpen&&exportControl}
    <button type="button" className="btn btn-ghost detail-media-open" onClick={()=>setMediaCandidate(selected)}>완성 이미지·상세페이지</button>
    <p className="inspector-lock"><Package size={13}/> 상품 등록·배송 신청 미실행</p>
   </aside>}
+  {selected&&conceptOpen&&<Suspense fallback={<p className="concept-loading" role="status">콘셉트 비교 준비 중…</p>}><ConceptWorkbench key={selectionKey} candidate={selected} choice={artChoice} onChange={choice=>setArtSelection({key:selectionKey,choice})} onClose={()=>{setConceptOpen(false);conceptTrigger.current?.focus();}}>{exportControl}</ConceptWorkbench></Suspense>}
   {mediaCandidate&&<DetailMediaPanel key={`${user?.id||'local'}:${mediaCandidate.id}`} candidate={views.find(c=>c.id===mediaCandidate.id)||mediaCandidate} onClose={()=>setMediaCandidate(null)}/>}
  </div>;
 }

@@ -13,14 +13,14 @@ test('export includes a versioned full-production brief and explicit user handof
  assert.ok(files['00_ChatGPT_제작요청.txt'], 'explicit paste request missing');
  assert.ok(files['제작가이드.md']); assert.ok(files['검수표.md']);
  const brief = parse(files, '패널구성안.json');
- assert.equal(brief.guideVersion, 2); assert.equal(brief.product.id, '675246155709');
+ assert.equal(brief.guideVersion, 3); assert.equal(brief.product.id, '675246155709');
  assert.equal(brief.product.revision, 4); assert.equal(brief.modules.length, 13);
  assert.deepEqual(brief.production.targetPanels, { min: 8, max: 12 });
  assert.equal(brief.production.maxPanelPixels, 8000000);
  assert.equal(brief.production.widthIsTargetNotMeasured, true);
  assert.deepEqual(c, before);
  assert.equal(result.request, strFromU8(files['00_ChatGPT_제작요청.txt']));
- assert.match(result.filename, /-guide-v2\.zip$/);
+ assert.match(result.filename, /-guide-v3-clean\.zip$/);
 });
 
 test('photo mapping never guesses which SKU a downloaded source depicts', async () => {

@@ -30,8 +30,8 @@ export function kitFacts(candidate){
  };
 }
 
-export function buildKitPrompt(facts){
- return buildDetailPageRequest(facts);
+export function buildKitPrompt(facts,artChoice){
+ return buildDetailPageRequest(facts,artChoice);
 }
 
 export function imageSlices(width,height){
@@ -102,7 +102,7 @@ ZIP 하나를 다운로드한 뒤 압축을 풀어 주세요.
 이 버튼은 GPT 호출/로그인/이미지 생성/상품 등록/배송 신청을 하지 않습니다. ChatGPT 사용은 사용자가 직접 선택하며 계정 한도·조건이 적용됩니다.
 `;
 
-export async function buildImageKit(candidate,{fetchImpl=fetch,prepare=prepareBrowserImage,signal,onProgress=()=>{}}={}){
+export async function buildImageKit(candidate,{fetchImpl=fetch,prepare=prepareBrowserImage,signal,onProgress=()=>{},artChoice}={}){
  signal?.throwIfAborted();
  const facts=kitFacts(candidate),files={};
  const sources=[...new Set((candidate.product?.images||[]).filter(v=>typeof v==='string'))];
@@ -140,21 +140,23 @@ export async function buildImageKit(candidate,{fetchImpl=fetch,prepare=prepareBr
  }
  if(!sources.length)manifest.images.push({status:'MISSING',reason:'저장된 원본 사진 없음',uploads:[]});
  signal?.throwIfAborted();
- files['프롬프트.txt']=strToU8(buildKitPrompt(facts));files['상품정보.json']=strToU8(JSON.stringify(facts,null,2));
- for(const [path,content] of Object.entries(buildGuideFiles(facts,manifest)))files[path]=strToU8(content);
+ const guideFiles=buildGuideFiles(facts,manifest,artChoice);
+ files['프롬프트.txt']=strToU8(guideFiles['00_ChatGPT_제작요청.txt']);files['상품정보.json']=strToU8(JSON.stringify(facts,null,2));
+ for(const [path,content] of Object.entries(guideFiles))files[path]=strToU8(content);
  files['사용방법.txt']=strToU8(instructions);files['manifest.json']=strToU8(JSON.stringify(manifest,null,2));
  onProgress('ZIP 묶는 중');
  // Images are already compressed; STORE avoids an expensive UI-thread deflate.
  const bytes=zipSync(files,{level:0});signal?.throwIfAborted();
- return {bytes,request:buildKitPrompt(facts),filename:`gpt-image-kit-${facts.id.replace(/[^a-zA-Z0-9_-]/g,'_')}-r${facts.revision}-guide-v2.zip`,ready,missing:manifest.images.length-ready,uploads:manifest.images.reduce((n,i)=>n+i.uploads.length,0)};
+ const art=JSON.parse(guideFiles['아트디렉션.json']);
+ return {bytes,request:guideFiles['00_ChatGPT_제작요청.txt'],filename:`gpt-image-kit-${facts.id.replace(/[^a-zA-Z0-9_-]/g,'_')}-r${facts.revision}-guide-v3-${art.selection.conceptId}.zip`,ready,missing:manifest.images.length-ready,uploads:manifest.images.reduce((n,i)=>n+i.uploads.length,0)};
 }
 
-export async function exportSavedKitRequest(client,selected,{signal}={}){
+export async function exportSavedKitRequest(client,selected,{signal,artChoice}={}){
  signal?.throwIfAborted();
  const packet=await client.request({action:'export',id:selected.id});
  signal?.throwIfAborted();
  if(packet.candidate?.id!==selected.id||packet.candidate.revision!==selected.revision)throw new Error('저장 후보가 변경됐습니다. 새로고침한 후 다시 복사하세요.');
- return buildKitPrompt(kitFacts(packet.candidate));
+ return buildKitPrompt(kitFacts(packet.candidate),artChoice);
 }
 
 export async function exportSavedImageKit(client,selected,options={}){
